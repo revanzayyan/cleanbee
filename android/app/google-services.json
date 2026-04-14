@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "971233495843",
+    "project_id": "cleanbee-debe2",
+    "storage_bucket": "cleanbee-debe2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:971233495843:android:115b49da9bfc2132395a96",
+        "android_client_info": {
+          "package_name": "com.example.cleanbee"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBVQNT70qKQxZIzHNAZIBimA5c0ck1I0Sw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
