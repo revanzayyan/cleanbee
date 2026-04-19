@@ -7,4 +7,4 @@ Date: 2026
 This file is created to test:
 - branch creation
 - commit process
-- push to remote repository
+- push to remote repositorys
