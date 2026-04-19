@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'cleanbee-debe2.firebasestorage.app',
     measurementId: 'G-3RBX40JQ4H',
   );
+
 }
