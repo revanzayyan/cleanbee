@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../utils/constants.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../services/auth_service.dart';
+import 'booking_screen.dart';
 
 // 1. IMPORT file jadwal_screen agar bisa dipanggil
 import 'jadwal_screen.dart';
@@ -322,7 +323,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     VoidCallback? onTap, // Parameter fungsi tap
   }) {
     return GestureDetector(
-      onTap: onTap, // Jalankan fungsi saat ditekan
+      onTap: () {
+        if (label == 'Memesan') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const BookingScreen(),
+            ),
+          );
+        }
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(

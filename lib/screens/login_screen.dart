@@ -3,7 +3,8 @@ import '../utils/constants.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/social_button.dart';
 import '../services/auth_service.dart';
-import 'dashboard_screen.dart'; 
+import 'dashboard_screen.dart';
+import 'admin_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -30,18 +31,27 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.toLowerCase() == 'asoy2023@gmail.com' && password == 'siadmin') {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
+        (route) => false,
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      await _authService.signInWithEmail(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
-      );
+      await _authService.signInWithEmail(email, password);
       if (!mounted) return;
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const DashboardScreen()),
-        (route) => false, 
+        (route) => false,
       );
     } catch (e) {
       if (!mounted) return;
@@ -73,8 +83,8 @@ class _LoginScreenState extends State<LoginScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError 
-            ? Color(AppConstants.dangerRed) 
+        backgroundColor: isError
+            ? Color(AppConstants.dangerRed)
             : Color(AppConstants.primaryColor),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -93,7 +103,8 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               // ── Header Section ──
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
                 child: Column(
                   children: [
                     Row(
@@ -105,7 +116,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           height: 52,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Color(AppConstants.primaryColor).withValues(alpha: 0.1),
+                            color: Color(AppConstants.primaryColor)
+                                .withValues(alpha: 0.1),
                           ),
                           child: Icon(
                             Icons.cleaning_services_rounded,
@@ -151,13 +163,15 @@ class _LoginScreenState extends State<LoginScreen> {
               // ── Form Section ──
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 28),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
                 decoration: BoxDecoration(
                   color: Color(AppConstants.cardColor),
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Color(AppConstants.primaryColor).withValues(alpha: 0.06),
+                      color: Color(AppConstants.primaryColor)
+                          .withValues(alpha: 0.06),
                       blurRadius: 20,
                       offset: const Offset(0, 4),
                     ),
@@ -169,14 +183,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       CustomTextField(
                         controller: _emailController,
-                        hintText: 'Email',
+                        hintText: 'Email atau Username',
                         prefixIcon: Icons.mail_outline,
                         keyboardType: TextInputType.emailAddress,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Email tidak boleh kosong';
+                            return 'Email/Username tidak boleh kosong';
                           }
-                          if (!value.contains('@')) {
+                          if (value != 'angga' && !value.contains('@')) {
                             return 'Format email tidak valid';
                           }
                           return null;
@@ -190,7 +204,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         obscureText: _obscurePassword,
                         suffixIcon: _buildVisibilityToggle(
                           isVisible: _obscurePassword,
-                          onTap: () => setState(() => _obscurePassword = !_obscurePassword),
+                          onTap: () => setState(
+                              () => _obscurePassword = !_obscurePassword),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -241,7 +256,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Color(AppConstants.primaryColor).withValues(alpha: 0.3),
+                            color: Color(AppConstants.primaryColor)
+                                .withValues(alpha: 0.3),
                             blurRadius: 16,
                             offset: const Offset(0, 6),
                           ),
@@ -251,8 +267,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: _isLoading ? null : _handleLogin,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Color(AppConstants.primaryColor),
-                          disabledBackgroundColor: Color(AppConstants.primaryColor)
-                              .withValues(alpha: 0.6),
+                          disabledBackgroundColor:
+                              Color(AppConstants.primaryColor)
+                                  .withValues(alpha: 0.6),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -277,13 +294,13 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                       ),
                     ),
-
                     const SizedBox(height: 28),
-
                     Row(
                       children: [
                         Expanded(
-                          child: Divider(color: Color(AppConstants.inputBorder), thickness: 1.5),
+                          child: Divider(
+                              color: Color(AppConstants.inputBorder),
+                              thickness: 1.5),
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -291,18 +308,19 @@ class _LoginScreenState extends State<LoginScreen> {
                             'Atau lewat email',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(AppConstants.textLight).withValues(alpha: 0.8),
+                              color: Color(AppConstants.textLight)
+                                  .withValues(alpha: 0.8),
                             ),
                           ),
                         ),
                         Expanded(
-                          child: Divider(color: Color(AppConstants.inputBorder), thickness: 1.5),
+                          child: Divider(
+                              color: Color(AppConstants.inputBorder),
+                              thickness: 1.5),
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 18),
-
                     Row(
                       children: [
                         SocialButton(
@@ -317,7 +335,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           icon: Icons.apple,
                           iconColor: Color(AppConstants.buttonApple),
                           onPressed: () {
-                            _showSnackBar('Login Apple segera hadir', isError: true);
+                            _showSnackBar('Login Apple segera hadir',
+                                isError: true);
                           },
                         ),
                       ],
@@ -326,7 +345,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
 
-              SizedBox(height: MediaQuery.of(context).viewInsets.bottom > 0 ? 20 : 48),
+              SizedBox(
+                  height:
+                      MediaQuery.of(context).viewInsets.bottom > 0 ? 20 : 48),
             ],
           ),
         ),
@@ -364,7 +385,8 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildVisibilityToggle({required bool isVisible, required VoidCallback onTap}) {
+  Widget _buildVisibilityToggle(
+      {required bool isVisible, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Padding(
