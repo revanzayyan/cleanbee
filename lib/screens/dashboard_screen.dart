@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../utils/constants.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../services/auth_service.dart';
+import 'booking_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -283,7 +284,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _featureCard({required IconData icon, required String label}) {
     return GestureDetector(
-      onTap: () {},
+      onTap: () {
+        if (label == 'Memesan') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const BookingScreen(),
+            ),
+          );
+        }
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
