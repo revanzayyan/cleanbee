@@ -4,6 +4,9 @@ import '../widgets/custom_bottom_nav.dart';
 import '../services/auth_service.dart';
 import 'booking_screen.dart';
 
+// 1. IMPORT file jadwal_screen agar bisa dipanggil
+import 'jadwal_screen.dart';
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -160,7 +163,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-// status pesanan
+  // status pesanan
   Widget _buildOrderStatus() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -246,7 +249,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-// fitur aplikasi
+  // fitur aplikasi (SUDAH DIPERBAIKI)
   Widget _buildFeatureSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -264,17 +267,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 16),
           Row(
             children: [
+              // Fitur Jadwal (SUDAH BERFUNGSI)
               Expanded(
                   child: _featureCard(
-                      icon: Icons.calendar_month_rounded, label: 'Jadwal')),
+                      icon: Icons.calendar_month_rounded, 
+                      label: 'Jadwal',
+                      onTap: () {
+                        // Berpindah ke halaman Jadwal
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const JadwalScreen(),
+                          ),
+                        );
+                      },
+                  )
+              ),
               const SizedBox(width: 12),
+              // Fitur Memesan
               Expanded(
                   child: _featureCard(
-                      icon: Icons.add_shopping_cart_rounded, label: 'Memesan')),
+                      icon: Icons.add_shopping_cart_rounded, 
+                      label: 'Memesan',
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Fitur Memesan belum tersedia')),
+                        );
+                      },
+                  )
+              ),
               const SizedBox(width: 12),
+              // Fitur CS
               Expanded(
                   child: _featureCard(
-                      icon: Icons.headset_mic_rounded, label: 'CS')),
+                      icon: Icons.headset_mic_rounded, 
+                      label: 'CS',
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Menghubungi Customer Service...')),
+                        );
+                      },
+                  )
+              ),
             ],
           ),
         ],
@@ -282,7 +316,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _featureCard({required IconData icon, required String label}) {
+  // Widget Kartu Fitur (SUDAH DIPERBAIKI: Menambahkan VoidCallback)
+  Widget _featureCard({
+    required IconData icon, 
+    required String label,
+    VoidCallback? onTap, // Parameter fungsi tap
+  }) {
     return GestureDetector(
       onTap: () {
         if (label == 'Memesan') {
@@ -333,7 +372,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-// ulasan pelanggan
+  // ulasan pelanggan
   Widget _buildReviewSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
