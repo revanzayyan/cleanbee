@@ -3,8 +3,9 @@ import '../utils/constants.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../services/auth_service.dart';
 import 'booking_screen.dart';
-
-// 1. IMPORT file jadwal_screen agar bisa dipanggil
+import 'setting_screen.dart';
+import 'chat_screen.dart';
+import 'chat_detail_screen.dart';
 import 'jadwal_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -17,6 +18,31 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _bottomNavIndex = 0;
 
+  final List<Widget> _screens = [
+    const _HomeContent(),
+    const _HomeContent(),
+    const ChatScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Color(AppConstants.backgroundColor),
+      body: IndexedStack(
+        index: _bottomNavIndex,
+        children: _screens,
+      ),
+      bottomNavigationBar: CustomBottomNav(
+        currentIndex: _bottomNavIndex,
+        onTap: (index) => setState(() => _bottomNavIndex = index),
+      ),
+    );
+  }
+}
+
+class _HomeContent extends StatelessWidget {
+  const _HomeContent();
+
   String _getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 11) return 'Selamat Pagi!';
@@ -27,54 +53,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   String _getUserName() {
     final user = AuthService().currentUser;
-
     if (user != null) {
-      // 1. Coba ambil displayName (Biasanya terisi dari Login Google)
       if (user.displayName != null && user.displayName!.isNotEmpty) {
         return user.displayName!;
       }
-
-      // 2. Jika tidak ada displayName, ambil email lalu potong bagian "@..."
       if (user.email != null && user.email!.isNotEmpty) {
         return user.email!.split('@')[0];
       }
     }
-
-    // 3. Fallback jika tidak ada data sama sekali
     return 'Pengguna';
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(AppConstants.backgroundColor),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 24),
-              _buildOrderStatus(),
-              const SizedBox(height: 28),
-              _buildFeatureSection(),
-              const SizedBox(height: 28),
-              _buildReviewSection(),
-              const SizedBox(height: 28),
-              SizedBox(height: 80),
-            ],
-          ),
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildHeader(context),
+            const SizedBox(height: 24),
+            _buildOrderStatus(),
+            const SizedBox(height: 28),
+            _buildFeatureSection(context),
+            const SizedBox(height: 28),
+            _buildReviewSection(),
+            const SizedBox(height: 28),
+            SizedBox(height: 80),
+          ],
         ),
-      ),
-      // ── Panggil CustomBottomNav di sini ──
-      bottomNavigationBar: CustomBottomNav(
-        currentIndex: _bottomNavIndex,
-        onTap: (index) => setState(() => _bottomNavIndex = index),
       ),
     );
   }
 
-  // header
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(28, 20, 28, 24),
@@ -85,85 +96,137 @@ class _DashboardScreenState extends State<DashboardScreen> {
           bottomRight: Radius.circular(28),
         ),
       ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.2),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.4),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.person,
-                    color: Colors.white,
-                    size: 26,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.2),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    width: 1.5,
                   ),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _getUserName(),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                child: const Icon(
+                  Icons.person,
+                  color: Colors.white,
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _getUserName(),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _getGreeting(),
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.8),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _getGreeting(),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.white.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ChatScreen()),
+                  );
+                },
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.15),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      const Icon(
+                        Icons.chat_bubble_outline_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Container(
+                          width: 16,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.red,
+                            border: Border.all(
+                              color: Color(AppConstants.primaryColor),
+                              width: 2,
+                            ),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              '3',
+                              style: TextStyle(
+                                fontSize: 8,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                // ── Ikon Setting ──
-                GestureDetector(
-                  onTap: () {
-                    // TODO: Navigasi ke halaman Setting
-                  },
-                  child: Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.15),
-                    ),
-                    child: const Icon(
-                      Icons.settings_outlined,
-                      color: Colors.white,
-                      size: 22,
-                    ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SettingScreen()),
+                  );
+                },
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.15),
+                  ),
+                  child: const Icon(
+                    Icons.settings_outlined,
+                    color: Colors.white,
+                    size: 22,
                   ),
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  // status pesanan
+  // ── Status Pesanan ──
   Widget _buildOrderStatus() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -196,8 +259,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Icon(
                     Icons.delete_outline_rounded,
                     size: 34,
-                    color:
-                        Color(AppConstants.primaryColor).withValues(alpha: 0.5),
+                    color: Color(AppConstants.primaryColor).withValues(alpha: 0.5),
                   ),
                   Positioned(
                     bottom: 2,
@@ -207,8 +269,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       height: 24,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Color(AppConstants.primaryColor)
-                            .withValues(alpha: 0.15),
+                        color: Color(AppConstants.primaryColor).withValues(alpha: 0.15),
                         border: Border.all(
                           color: Color(AppConstants.cardColor),
                           width: 2,
@@ -249,8 +310,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // fitur aplikasi (SUDAH DIPERBAIKI)
-  Widget _buildFeatureSection() {
+  // ── Fitur Aplikasi ──
+  Widget _buildFeatureSection(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
@@ -267,47 +328,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 16),
           Row(
             children: [
-              // Fitur Jadwal (SUDAH BERFUNGSI)
               Expanded(
-                  child: _featureCard(
-                      icon: Icons.calendar_month_rounded, 
-                      label: 'Jadwal',
-                      onTap: () {
-                        // Berpindah ke halaman Jadwal
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const JadwalScreen(),
-                          ),
-                        );
-                      },
-                  )
+                child: _featureCard(
+                  context,
+                  icon: Icons.calendar_month_rounded,
+                  label: 'Jadwal',
+                ),
               ),
               const SizedBox(width: 12),
-              // Fitur Memesan
               Expanded(
-                  child: _featureCard(
-                      icon: Icons.add_shopping_cart_rounded, 
-                      label: 'Memesan',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Fitur Memesan belum tersedia')),
-                        );
-                      },
-                  )
+                child: _featureCard(
+                  context,
+                  icon: Icons.add_shopping_cart_rounded,
+                  label: 'Memesan',
+                ),
               ),
               const SizedBox(width: 12),
-              // Fitur CS
               Expanded(
-                  child: _featureCard(
-                      icon: Icons.headset_mic_rounded, 
-                      label: 'CS',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Menghubungi Customer Service...')),
-                        );
-                      },
-                  )
+                child: _featureCard(
+                  context,
+                  icon: Icons.headset_mic_rounded,
+                  label: 'CS',
+                ),
               ),
             ],
           ),
@@ -316,19 +358,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Widget Kartu Fitur (SUDAH DIPERBAIKI: Menambahkan VoidCallback)
-  Widget _featureCard({
-    required IconData icon, 
-    required String label,
-    VoidCallback? onTap, // Parameter fungsi tap
-  }) {
+  Widget _featureCard(BuildContext context, {required IconData icon, required String label}) {
     return GestureDetector(
       onTap: () {
+        if (label == 'Jadwal') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const JadwalScreen()),
+          );
+        }
         if (label == 'Memesan') {
           Navigator.push(
             context,
+            MaterialPageRoute(builder: (context) => const BookingScreen()),
+          );
+        }
+        if (label == 'CS') {
+          Navigator.push(
+            context,
             MaterialPageRoute(
-              builder: (context) => const BookingScreen(),
+              builder: (context) => const ChatDetailScreen(
+                name: 'Customer Service',
+                isOnline: true,
+              ),
             ),
           );
         }
@@ -372,7 +424,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ulasan pelanggan
+  // ── Ulasan Pelanggan ──
   Widget _buildReviewSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -432,15 +484,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Icon(
                           Icons.photo_camera_outlined,
                           size: 40,
-                          color: Color(AppConstants.primaryColor)
-                              .withValues(alpha: 0.4),
+                          color: Color(AppConstants.primaryColor).withValues(alpha: 0.4),
                         ),
                         Positioned(
                           top: 10,
                           right: 10,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color: Color(AppConstants.primaryColor),
                               borderRadius: BorderRadius.circular(20),
@@ -448,8 +498,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.star_rounded,
-                                    color: Color(0xFFFFD700), size: 16),
+                                Icon(Icons.star_rounded, color: Color(0xFFFFD700), size: 16),
                                 SizedBox(width: 4),
                                 Text(
                                   '4.9',
@@ -477,42 +526,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         shape: BoxShape.circle,
                         color: Color(AppConstants.accentColor),
                       ),
-                      child: Icon(Icons.person,
-                          size: 18, color: Color(AppConstants.primaryColor)),
+                      child: Icon(Icons.person, size: 18, color: Color(AppConstants.primaryColor)),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Ahmad Fauzi',
-                              style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(AppConstants.textDark))),
+                          const Text(
+                            'Revan Zayyan',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Color(AppConstants.textDark),
+                            ),
+                          ),
                           const SizedBox(height: 2),
                           Row(
                             children: List.generate(
-                                5,
-                                (_) => Icon(Icons.star_rounded,
-                                    size: 14, color: Color(0xFFFFD700))),
+                              5,
+                              (_) => Icon(Icons.star_rounded, size: 14, color: Color(0xFFFFD700)),
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    Text('2 hari lalu',
-                        style: TextStyle(
-                            fontSize: 11,
-                            color: Color(AppConstants.textLight))),
+                    Text(
+                      '2 hari lalu',
+                      style: TextStyle(fontSize: 11, color: Color(AppConstants.textLight)),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
                 const Text(
                   'Kamarnya jadi bersih dan wangi! Petugasnya ramah dan hasilnya sangat memuaskan. Recommended banget!',
                   style: TextStyle(
-                      fontSize: 13,
-                      color: Color(AppConstants.textLight),
-                      height: 1.5),
+                    fontSize: 13,
+                    color: Color(AppConstants.textLight),
+                    height: 1.5,
+                  ),
                 ),
               ],
             ),
