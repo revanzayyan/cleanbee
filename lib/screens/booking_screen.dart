@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../models/booking_model.dart';
+import '../screens/booking_confirmation_screen.dart';
+import '../services/auth_service.dart';
 import '../utils/constants.dart';
 
 class BookingScreen extends StatefulWidget {
@@ -396,10 +399,39 @@ class _BookingScreenState extends State<BookingScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    final message =
-                        'Lanjutkan pemesanan untuk $_selectedCategory di $_selectedBuildingType pada $_formattedDate, $_selectedTime';
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(message)),
+                    final building = _buildingController.text.trim();
+                    final floor = _floorController.text.trim();
+                    final room = _roomController.text.trim();
+
+                    if (building.isEmpty || floor.isEmpty || room.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                              'Mohon lengkapi detail alamat sebelum melanjutkan.'),
+                        ),
+                      );
+                      return;
+                    }
+
+                    final booking = BookingModel(
+                      category: _selectedCategory,
+                      buildingType: _selectedBuildingType,
+                      building: building,
+                      floor: floor,
+                      room: room,
+                      date: _selectedDate,
+                      time: _selectedTime,
+                      userUid: AuthService().currentUser?.uid,
+                      userEmail: AuthService().currentUser?.email,
+                    );
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => BookingConfirmationScreen(
+                          booking: booking,
+                        ),
+                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
