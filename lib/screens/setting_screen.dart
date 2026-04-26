@@ -29,11 +29,9 @@ class SettingScreen extends StatelessWidget {
   }
 
   Future<void>_handleLogout(BuildContext context) async {
-    // Tutup dialog terlebih dahulu
     Navigator.pop(context);
 
     try {
-      // Tampilkan loading indicator
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -44,25 +42,20 @@ class SettingScreen extends StatelessWidget {
         ),
       );
 
-      // Proses sign out
       await AuthService().signOut();
 
-      // Tutup loading
       if (!context.mounted) return;
       Navigator.pop(context);
 
-      // Navigasi ke LoginScreen dan hapus semua stack navigasi
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const LoginScreen()),
         (route) => false,
       );
     } catch (e) {
-      // Tutup loading jika ada error
       if (!context.mounted) return;
       Navigator.pop(context);
 
-      // Tampilkan pesan error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -91,7 +84,6 @@ class SettingScreen extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Ikon
                 Container(
                   width: 64,
                   height: 64,
@@ -106,7 +98,6 @@ class SettingScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 18),
-                // Teks pertanyaan
                 const Text(
                   'Apakah anda ingin keluar?',
                   textAlign: TextAlign.center,
@@ -117,7 +108,6 @@ class SettingScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                // Tombol Ya & Tidak
                 Row(
                   children: [
                     Expanded(
@@ -185,7 +175,7 @@ class SettingScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Color(AppConstants.textDark).withValues(alpha: 0.04),
               blurRadius: 12,
               offset: const Offset(0, 2),
             ),
@@ -317,44 +307,34 @@ class SettingScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 28),
               child: Column(
                 children: [
-                  _menuItem(
-                    icon: Icons.person_outline_rounded,
-                    title: 'Akun',
-                    onTap: () {
-                      // TODO: Navigasi ke halaman Akun
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  _menuItem(
-                    icon: Icons.history_rounded,
-                    title: 'Riwayatku',
-                    onTap: () {
-                      // TODO: Navigasi ke halaman Riwayat
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  _menuItem(
-                    icon: Icons.notifications_none_rounded,
-                    title: 'Notifikasi',
-                    onTap: () {
-                      // TODO: Navigasi ke halaman Notifikasi
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  _menuItem(
-                    icon: Icons.help_outline_rounded,
-                    title: 'Bantuan',
-                    onTap: () {
-                      // TODO: Navigasi ke halaman Bantuan
-                    },
-                  ),
+                  // _menuItem(
+                  //   icon: Icons.person_outline_rounded,
+                  //   title: 'Akun',
+                  //   onTap: () {},
+                  // ),
+                  // const SizedBox(height: 14),
+                  // _menuItem(
+                  //   icon: Icons.history_rounded,
+                  //   title: 'Riwayatku',
+                  //   onTap: () {},
+                  // ),
+                  // const SizedBox(height: 14),
+                  // _menuItem(
+                  //   icon: Icons.notifications_none_rounded,
+                  //   title: 'Notifikasi',
+                  //   onTap: () {},
+                  // ),
+                  // const SizedBox(height: 14),
+                  // _menuItem(
+                  //   icon: Icons.help_outline_rounded,
+                  //   title: 'Bantuan',
+                  //   onTap: () {},
+                  // ),
                   const SizedBox(height: 14),
                   _menuItem(
                     icon: Icons.info_outline_rounded,
                     title: 'Tentang Aplikasi',
-                    onTap: () {
-                      // TODO: Navigasi ke halaman Tentang
-                    },
+                    onTap: () {},
                   ),
                 ],
               ),
@@ -370,7 +350,7 @@ class SettingScreen extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () => _showLogoutDialog(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.shade50,
+                    backgroundColor: Color(AppConstants.dangerRed).withValues(alpha: 0.08),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -382,7 +362,7 @@ class SettingScreen extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.logout_rounded,
-                        color: Colors.red.shade400,
+                        color: Color(AppConstants.dangerRed).withValues(alpha: 0.85),
                         size: 22,
                       ),
                       const SizedBox(width: 10),
@@ -391,7 +371,7 @@ class SettingScreen extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: Colors.red.shade400,
+                          color: Color(AppConstants.dangerRed).withValues(alpha: 0.85),
                         ),
                       ),
                     ],
