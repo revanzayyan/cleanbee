@@ -1,68 +1,15 @@
 import 'package:flutter/material.dart';
-
-class BookingOrder {
-  final String id;
-  final String category;
-  final String buildingType;
-  final String buildingDetail;
-  final String floorDetail;
-  final String roomDetail;
-  final DateTime date;
-  final String timeRange;
-  final String status;
-  final DateTime createdAt;
-  final String petugasName;
-  final double petugasRating;
-
-  BookingOrder({
-    required this.id,
-    required this.category,
-    required this.buildingType,
-    required this.buildingDetail,
-    required this.floorDetail,
-    required this.roomDetail,
-    required this.date,
-    required this.timeRange,
-    this.status = 'Diproses',
-    DateTime? createdAt,
-    this.petugasName = 'Sari Dewi',
-    this.petugasRating = 4.9,
-  }) : createdAt = createdAt ?? DateTime.now();
-
-  String get scheduleKey => '${date.year}-${date.month}-${date.day}';
-
-  String get formattedDate =>
-      '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-
-  String get fullAddress =>
-      '$buildingType, $buildingDetail, Lantai $floorDetail, Kamar $roomDetail';
-
-  BookingOrder copyWith({String? status}) {
-    return BookingOrder(
-      id: id,
-      category: category,
-      buildingType: buildingType,
-      buildingDetail: buildingDetail,
-      floorDetail: floorDetail,
-      roomDetail: roomDetail,
-      date: date,
-      timeRange: timeRange,
-      status: status ?? this.status,
-      createdAt: createdAt,
-      petugasName: petugasName,
-      petugasRating: petugasRating,
-    );
-  }
-}
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/booking_model.dart';
 
 class BookingService extends ChangeNotifier {
   static final BookingService _instance = BookingService._internal();
   factory BookingService() => _instance;
   BookingService._internal();
 
-  final List<BookingOrder> _orders = [];
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final List<BookingModel> _orders = [];
 
-  // ─── Data jadwal dasar ──────────────────────────────────────
   final Map<String, List<Map<String, dynamic>>> _baseScheduleData = {
     '2025-4-1': [
       {'time': '07:00 - 08:00', 'isAvailable': false},
@@ -104,32 +51,18 @@ class BookingService extends ChangeNotifier {
     ],
   };
 
-  // ─── GETTERS ────────────────────────────────────────────────
+  List<BookingModel> get orders => List.unmodifiable(_orders);
 
-  List<BookingOrder> get orders => List.unmodifiable(_orders);
-
-  List<BookingOrder> getActiveOrders() {
+  List<BookingModel> getActiveOrders() {
     return _orders
         .where((o) => o.status != 'Selesai' && o.status != 'Dibatalkan')
         .toList();
   }
 
-  BookingOrder? get latestActiveOrder {
-    final active = getActiveOrders();
-    return active.isEmpty ? null : active.last;
-  }
-
-  // ─── SCHEDULE (gabungkan data dasar + booking) ──────────────
-
-  /// Ambil slot untuk tanggal tertentu.
-  /// Slot yang sudah di-booking akan otomatis jadi isAvailable: false.
   List<Map<String, dynamic>> getSlotsForDate(String scheduleKey) {
     List<Map<String, dynamic>> slots;
-
     if (_baseScheduleData.containsKey(scheduleKey)) {
-      slots = _baseScheduleData[scheduleKey]!
-          .map((s) => Map<String, dynamic>.from(s))
-          .toList();
+      slots = _baseScheduleData[scheduleKey]!.map((s) => Map<String, dynamic>.from(s)).toList();
     } else {
       slots = [
         {'time': '07:00 - 08:00', 'isAvailable': true},
@@ -137,25 +70,19 @@ class BookingService extends ChangeNotifier {
         {'time': '11:00 - 12:00', 'isAvailable': true},
       ];
     }
-
-    // Override: tandai slot yang sudah di-booking
     for (var slot in slots) {
       final isBooked = _orders.any((o) =>
           o.scheduleKey == scheduleKey &&
           o.timeRange == slot['time'] &&
           o.status != 'Dibatalkan');
-      if (isBooked) {
-        slot['isAvailable'] = false;
-      }
+      if (isBooked) slot['isAvailable'] = false;
     }
-
     return slots;
   }
 
   bool hasScheduleForDate(String scheduleKey) {
     if (_baseScheduleData.containsKey(scheduleKey)) return true;
-    return _orders.any(
-        (o) => o.scheduleKey == scheduleKey && o.status != 'Dibatalkan');
+    return _orders.any((o) => o.scheduleKey == scheduleKey && o.status != 'Dibatalkan');
   }
 
   bool isSlotAvailable(String scheduleKey, String timeRange) {
@@ -164,48 +91,27 @@ class BookingService extends ChangeNotifier {
         o.timeRange == timeRange &&
         o.status != 'Dibatalkan');
     if (isBooked) return false;
-
     final slots = getSlotsForDate(scheduleKey);
-    final match = slots.firstWhere(
-      (s) => s['time'] == timeRange,
-      orElse: () => {'isAvailable': false},
-    );
+    final match = slots.firstWhere((s) => s['time'] == timeRange, orElse: () => {'isAvailable': false});
     return match['isAvailable'] == true;
   }
 
-  // ─── BOOKING ────────────────────────────────────────────────
+  // Digunakan oleh BookingConfirmationScreen
+  Future<BookingModel?> saveBooking(BookingModel order) async {
+    if (!isSlotAvailable(order.scheduleKey, order.timeRange)) return null;
 
-  /// Return order jika berhasil, null jika slot sudah penuh.
-  BookingOrder? createBooking({
-    required String category,
-    required String buildingType,
-    required String buildingDetail,
-    required String floorDetail,
-    required String roomDetail,
-    required DateTime date,
-    required String timeRange,
-  }) {
-    final scheduleKey = '${date.year}-${date.month}-${date.day}';
-
-    if (!isSlotAvailable(scheduleKey, timeRange)) {
-      return null;
+    try {
+      final docRef = await _firestore.collection('bookings').add(order.toMap());
+      final savedOrder = order.copyWith(id: docRef.id);
+      _orders.add(savedOrder);
+      notifyListeners();
+      return savedOrder;
+    } catch (e) {
+      debugPrint('Error saving to Firebase: $e');
+      _orders.add(order);
+      notifyListeners();
+      return order;
     }
-
-    final order = BookingOrder(
-      id: 'ORD-${DateTime.now().millisecondsSinceEpoch}',
-      category: category,
-      buildingType: buildingType,
-      buildingDetail: buildingDetail,
-      floorDetail: floorDetail,
-      roomDetail: roomDetail,
-      date: date,
-      timeRange: timeRange,
-      status: 'Diproses',
-    );
-
-    _orders.add(order);
-    notifyListeners();
-    return order;
   }
 
   void cancelOrder(String orderId) => updateOrderStatus(orderId, 'Dibatalkan');

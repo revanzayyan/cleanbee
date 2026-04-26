@@ -3,6 +3,7 @@ import '../utils/constants.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../services/auth_service.dart';
 import '../services/booking_service.dart';
+import '../models/booking_model.dart';
 import 'booking_screen.dart';
 import 'setting_screen.dart';
 import 'chat_screen.dart';
@@ -76,6 +77,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
+// ---------------------------------------------------------
+// HOME CONTENT (StatelessWidget)
+// ---------------------------------------------------------
 class _HomeContent extends StatelessWidget {
   final BookingService bookingService;
 
@@ -118,10 +122,9 @@ class _HomeContent extends StatelessWidget {
       slivers: [
         // ── HEADER: Sticky (Ditempel di atas) ──
         SliverAppBar(
-          pinned: true, // Membuat header sticky
+          pinned: true,
           expandedHeight: headerHeight,
-          toolbarHeight: headerHeight, // Samakan agar tidak bisa di-collapse
-          primary: false, // Kita handle safe area status bar manual di dalam widget
+          toolbarHeight: headerHeight,
           backgroundColor: Color(AppConstants.primaryColor),
           elevation: 0,
           automaticallyImplyLeading: false,
@@ -229,7 +232,7 @@ class _HomeContent extends StatelessWidget {
   // ─── PESANAN AKTIF ─────────────────────────────────────────
 
   Widget _buildOrderStatus(
-      BuildContext context, List<BookingOrder> activeOrders) {
+      BuildContext context, List<BookingModel> activeOrders) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -319,7 +322,7 @@ class _HomeContent extends StatelessWidget {
     );
   }
 
-  Widget _buildOrderCard(BuildContext context, {required BookingOrder order}) {
+  Widget _buildOrderCard(BuildContext context, {required BookingModel order}) {
     Color statusColor;
     Color statusBgColor;
 
@@ -489,7 +492,7 @@ class _HomeContent extends StatelessWidget {
 
   // ─── DETAIL BOTTOM SHEET ───────────────────────────────────
 
-  void _showOrderDetail(BuildContext context, {required BookingOrder order}) {
+  void _showOrderDetail(BuildContext context, {required BookingModel order}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
