@@ -3,32 +3,22 @@ import '../utils/constants.dart';
 import 'chat_detail_screen.dart';
 
 class ChatScreen extends StatelessWidget {
-  const ChatScreen({super.key});
+  final VoidCallback? onBack;
+
+  const ChatScreen({super.key, this.onBack});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(AppConstants.backgroundColor),
-      appBar: AppBar(
-        backgroundColor: Color(AppConstants.primaryColor),
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: const Text(
-          'Pesan',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-            color: Colors.white,
-          ),
-        ),
-        centerTitle: false,
-      ),
+      backgroundColor: Colors.white,
       body: Column(
         children: [
+          _buildHeader(context),
+
           // ── Header Pesan Saya ──
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(28, 20, 28, 14),
+            padding: const EdgeInsets.fromLTRB(28, 16, 28, 12),
             color: Color(AppConstants.primaryColor).withValues(alpha: 0.08),
             child: const Align(
               alignment: Alignment.centerLeft,
@@ -67,6 +57,57 @@ class ChatScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildHeader(BuildContext context) {
+    final statusBarHeight = MediaQuery.of(context).padding.top;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(28, statusBarHeight + 16, 28, 20),
+      decoration: BoxDecoration(
+        color: Color(AppConstants.primaryColor),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(28),
+          bottomRight: Radius.circular(28),
+        ),
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () {
+              if (onBack != null) {
+                onBack!();
+              } else {
+                Navigator.pop(context);
+              }
+            },
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.15),
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          const Text(
+            'Pesan',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _chatTile(BuildContext context, {required ChatModel chat}) {
     final isUnread = chat.unreadCount > 0;
 
@@ -90,7 +131,6 @@ class ChatScreen extends StatelessWidget {
             : Colors.transparent,
         child: Row(
           children: [
-            // ── Avatar ──
             Stack(
               children: [
                 Container(
@@ -120,7 +160,6 @@ class ChatScreen extends StatelessWidget {
                         )
                       : null,
                 ),
-                // Online indicator
                 if (chat.isOnline)
                   Positioned(
                     right: 0,
@@ -134,7 +173,7 @@ class ChatScreen extends StatelessWidget {
                         border: Border.all(color: Colors.white, width: 2),
                       ),
                       child: Container(
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
                           color: Color(0xFF22C55E),
                         ),
@@ -143,10 +182,7 @@ class ChatScreen extends StatelessWidget {
                   ),
               ],
             ),
-
             const SizedBox(width: 16),
-
-            // ── Konten ──
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,7 +215,6 @@ class ChatScreen extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      // Ikon jika pesan masuk/keluar
                       if (chat.isFromMe)
                         Padding(
                           padding: const EdgeInsets.only(right: 4),
@@ -217,10 +252,7 @@ class ChatScreen extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(width: 10),
-
-            // ── Badge Unread ──
             if (isUnread)
               Container(
                 width: 24,
@@ -253,7 +285,6 @@ class ChatScreen extends StatelessWidget {
   }
 }
 
-// ── Model Data ──
 class ChatModel {
   final String name;
   final String lastMessage;
@@ -274,7 +305,6 @@ class ChatModel {
   });
 }
 
-// ── Dummy Data ──
 final List<ChatModel> _chatList = [
   const ChatModel(
     name: 'Raska',
