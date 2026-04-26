@@ -16,6 +16,7 @@ class _BookingScreenState extends State<BookingScreen> {
   String _selectedCategory = 'Kamar Tidur';
   DateTime _selectedDate = DateTime(2025, 4, 18);
   String _selectedTime = '10.00 - 11.00';
+  String _selectedBuildingType = 'Gedung Putri';
 
   @override
   void dispose() {
@@ -178,6 +179,50 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
+  Widget _buildingTypeItem(String value) {
+    final isSelected = _selectedBuildingType == value;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedBuildingType = value),
+      child: Row(
+        children: [
+          Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isSelected
+                    ? Color(AppConstants.primaryColor)
+                    : Color(AppConstants.inputBorder),
+                width: 2,
+              ),
+              color:
+                  isSelected ? Color(AppConstants.primaryColor) : Colors.white,
+            ),
+            child: isSelected
+                ? const Center(
+                    child: Icon(
+                      Icons.check,
+                      size: 12,
+                      color: Colors.white,
+                    ),
+                  )
+                : null,
+          ),
+          const SizedBox(width: 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(AppConstants.textDark),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _underlineField(
       {required String hint, required TextEditingController controller}) {
     return Container(
@@ -250,6 +295,30 @@ class _BookingScreenState extends State<BookingScreen> {
                     _categoryItem('Kamar Mandi'),
                     const SizedBox(height: 14),
                     _categoryItem('Kamar Tidur + Kamar Mandi'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              _sectionTitle('*Pilih Gedung'),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    _buildingTypeItem('Gedung Putri'),
+                    const SizedBox(height: 14),
+                    _buildingTypeItem('Gedung Putra'),
                   ],
                 ),
               ),
@@ -328,7 +397,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 child: ElevatedButton(
                   onPressed: () {
                     final message =
-                        'Lanjutkan pemesanan untuk $_selectedCategory pada $_formattedDate, $_selectedTime';
+                        'Lanjutkan pemesanan untuk $_selectedCategory di $_selectedBuildingType pada $_formattedDate, $_selectedTime';
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text(message)),
                     );

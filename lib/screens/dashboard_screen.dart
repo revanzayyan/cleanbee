@@ -6,6 +6,7 @@ import 'booking_screen.dart';
 import 'setting_screen.dart';
 import 'chat_screen.dart';
 import 'chat_detail_screen.dart';
+import 'jadwal_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -17,7 +18,6 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _bottomNavIndex = 0;
 
-  // Index 0 → Home, Index 1 → Home (Riwayat belum ada), Index 2 → Pesan
   final List<Widget> _screens = [
     const _HomeContent(),
     const _HomeContent(),
@@ -40,9 +40,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// HOME CONTENT
-// ═══════════════════════════════════════════════════════════════
 class _HomeContent extends StatelessWidget {
   const _HomeContent();
 
@@ -88,7 +85,6 @@ class _HomeContent extends StatelessWidget {
     );
   }
 
-  // ── Header ──
   Widget _buildHeader(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -149,7 +145,6 @@ class _HomeContent extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              // Ikon Pesan
               GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -203,7 +198,6 @@ class _HomeContent extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              // Ikon Setting
               GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -367,6 +361,12 @@ class _HomeContent extends StatelessWidget {
   Widget _featureCard(BuildContext context, {required IconData icon, required String label}) {
     return GestureDetector(
       onTap: () {
+        if (label == 'Jadwal') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const JadwalScreen()),
+          );
+        }
         if (label == 'Memesan') {
           Navigator.push(
             context,
