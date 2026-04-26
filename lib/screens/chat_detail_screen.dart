@@ -95,7 +95,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _focusNode.unfocus();
     _scrollToBottom();
 
-    // Simulasi balasan
     _simulateReply();
   }
 
@@ -133,7 +132,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(AppConstants.backgroundColor),
+      // ↓ Diubah menjadi Colors.white agar sama seperti ChatScreen
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Color(AppConstants.primaryColor),
         elevation: 0,
@@ -143,7 +143,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         ),
         title: Row(
           children: [
-            // Avatar kecil di AppBar
             Container(
               width: 36,
               height: 36,
@@ -193,7 +192,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       ),
       body: Column(
         children: [
-          // ── Tanggal Header ──
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -217,7 +215,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             ),
           ),
 
-          // ── List Pesan ──
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -232,7 +229,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             ),
           ),
 
-          // ── Input Area ──
           _buildInputArea(),
         ],
       ),
@@ -410,7 +406,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
       decoration: BoxDecoration(
-        color: Color(AppConstants.cardColor),
+        color: Colors.white, // Diperbarui jadi putih agar selaras dengan body
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -427,7 +423,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         top: false,
         child: Row(
           children: [
-            // Tombol Attachment
             Container(
               width: 42,
               height: 42,
@@ -442,8 +437,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               ),
             ),
             const SizedBox(width: 12),
-
-            // Input Field
             Expanded(
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -476,8 +469,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               ),
             ),
             const SizedBox(width: 12),
-
-            // Tombol Kirim
             GestureDetector(
               onTap: _sendMessage,
               child: Container(
