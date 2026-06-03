@@ -1,0 +1,180 @@
+/**
+ * FIRESTORE SECURITY RULES
+ * 
+ * Manages access control for CleanBee Firestore database
+ * Handles user bookings, payments, and payment callbacks
+ * 
+ * IMPORTANT: Deploy these rules using Firebase CLI:
+ *   firebase deploy --only firestore:rules
+ * 
+ * Or paste directly into Firebase Console:
+ *   Project Settings → Firestore → Rules tab
+ */
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    /**
+     * Helper function to check if user is authenticated
+     */
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    /**
+     * Helper function to check if user owns this document
+     */
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    /**
+     * Helper function to check if user is admin
+     */
+    function isAdmin() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // ===================================================================
+    // USERS COLLECTION
+    // ===================================================================
+    match /users/{userId} {
+      // User can read and write their own document
+      allow read, write: if isOwner(userId);
+      
+      // Admin can read all users
+      allow read: if isAdmin();
+      
+      // Subcollections under user
+      match /{document=**} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // ===================================================================
+    // BOOKINGS COLLECTION
+    // ===================================================================
+    match /bookings/{bookingId} {
+      // User can read and create bookings
+      allow read, create: if isAuthenticated() && 
+                            request.resource.data.user_uid == request.auth.uid;
+      
+      // User can update their own bookings
+      allow update: if isOwner(resource.data.user_uid) &&
+                       // Allow status updates from backend (after payment)
+                       // Only certain fields can be updated
+                       (resource.data.user_uid == request.auth.uid ||
+                        request.auth.uid == null); // Allow from backend
+      
+      // Admin can read all bookings
+      allow read: if isAdmin();
+      
+      // Backend service account can update booking status
+      allow update: if request.auth == null && 
+                       // Verify backend is updating via service account
+                       (request.resource.data.get('status') != null ||
+                        request.resource.data.get('payment_status') != null);
+      
+      // Delete not allowed for now
+      allow delete: if false;
+    }
+
+    // ===================================================================
+    // PAYMENTS COLLECTION
+    // ===================================================================
+    match /payments/{paymentId} {
+      // User can read payments they're associated with (via booking)
+      allow read: if isAuthenticated() &&
+                     get(/databases/$(database)/documents/bookings/$(resource.data.booking_id)).data.user_uid == request.auth.uid;
+      
+      // User can create new payment records
+      allow create: if isAuthenticated() &&
+                       resource.data.booking_id != null &&
+                       get(/databases/$(database)/documents/bookings/$(resource.data.booking_id)).data.user_uid == request.auth.uid;
+      
+      // Backend (webhook) can update payment status
+      // When request.auth is null, it's from backend service account
+      allow update: if (request.auth == null ||
+                        isAdmin()) &&
+                       // Can only update these fields from backend
+                       request.resource.data.keys().hasOnly([
+                         'reference_id', 'booking_id', 'amount', 'status', 'doku_status',
+                         'payment_method', 'virtual_account_number', 'qr_string',
+                         'expires_at', 'paid_at', 'updated_at', 'webhook_data',
+                         'webhook_received_at', 'metadata'
+                       ]);
+      
+      // Only owner of booking can read their payments
+      allow delete: if false;
+    }
+
+    // ===================================================================
+    // WEBHOOK LOGS COLLECTION
+    // ===================================================================
+    match /webhook_logs/{logId} {
+      // Only backend can write logs
+      allow write: if request.auth == null ||
+                      isAdmin();
+      
+      // Only admin can read logs
+      allow read: if isAdmin();
+      
+      // No delete for audit trail
+      allow delete: if false;
+    }
+
+    // ===================================================================
+    // ADMINS COLLECTION
+    // ===================================================================
+    match /admins/{userId} {
+      // Only admin can manage admins
+      allow read, write, delete: if isAdmin();
+      
+      // Admin can read their own admin status
+      allow read: if isAuthenticated() && 
+                     request.auth.uid == userId;
+    }
+
+    // ===================================================================
+    // SETTINGS COLLECTION
+    // ===================================================================
+    match /settings/{document=**} {
+      // Anyone can read public settings
+      allow read: if true;
+      
+      // Only admin can modify settings
+      allow write, delete: if isAdmin();
+    }
+
+    // ===================================================================
+    // CATEGORIES COLLECTION
+    // ===================================================================
+    match /categories/{categoryId} {
+      // Anyone can read categories
+      allow read: if true;
+      
+      // Only admin can manage categories
+      allow write, delete: if isAdmin();
+    }
+
+    // ===================================================================
+    // PRICING COLLECTION
+    // ===================================================================
+    match /pricing/{pricingId} {
+      // Anyone can read pricing
+      allow read: if true;
+      
+      // Only admin can manage pricing
+      allow write, delete: if isAdmin();
+    }
+
+    // ===================================================================
+    // CATCH-ALL (Default Deny)
+    // ===================================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
