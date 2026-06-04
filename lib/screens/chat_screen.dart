@@ -10,28 +10,79 @@ class ChatScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(MediaQuery.of(context).padding.top + 62),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.fromLTRB(
+            28,
+            MediaQuery.of(context).padding.top + 4,
+            28,
+            16,
+          ),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF0284C7),
+                Color(0xFF38BDF8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(28),
+              bottomRight: Radius.circular(28),
+            ),
+          ),
+          child: SafeArea(
+            top: false,
+            bottom: false,
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    if (onBack != null) {
+                      onBack!();
+                    } else {
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.15),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                const Text(
+                  'Pesan',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
       body: Column(
         children: [
-          _buildHeader(context),
-
           // ── Header Pesan Saya ──
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(28, 16, 28, 12),
-            color: Color(AppConstants.primaryColor).withValues(alpha: 0.08),
-            child: const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Pesan Saya',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Color(AppConstants.primaryColor),
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ),
+            color: const Color(0xFFF8FAFC),
           ),
 
           // ── Daftar Chat ──
@@ -50,57 +101,6 @@ class ChatScreen extends StatelessWidget {
                 final chat = _chatList[index];
                 return _chatTile(context, chat: chat);
               },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    final statusBarHeight = MediaQuery.of(context).padding.top;
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.fromLTRB(28, statusBarHeight + 16, 28, 20),
-      decoration: BoxDecoration(
-        color: Color(AppConstants.primaryColor),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
-        ),
-      ),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () {
-              if (onBack != null) {
-                onBack!();
-              } else {
-                Navigator.pop(context);
-              }
-            },
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.15),
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: Colors.white,
-                size: 18,
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          const Text(
-            'Pesan',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
             ),
           ),
         ],

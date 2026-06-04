@@ -96,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(AppConstants.backgroundColor),
+      backgroundColor: const Color(0xFFF1F5F9),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -122,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: Icon(
                             Icons.cleaning_services_rounded,
                             color: Color(AppConstants.primaryColor),
-                            size: 26,
+                            size: 30,
                           ),
                         ),
                       ],

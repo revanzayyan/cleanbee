@@ -5,18 +5,20 @@ class CustomBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
   final bool hasUnverifiedOrders;
+  final VoidCallback? onAddTap;
 
   const CustomBottomNav({
     super.key,
     required this.currentIndex,
     required this.onTap,
     this.hasUnverifiedOrders = false,
+    this.onAddTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 70,
+      height: 75,
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -30,29 +32,43 @@ class CustomBottomNav extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
+          // Home
           _navItem(
-            icon: Icons.access_time_rounded,
-            label: 'Riwayat',
+            icon: Icons.home_outlined,
+            activeIcon: Icons.home_rounded,
+            label: 'Home',
             index: 0,
           ),
+          // Riwayat
+          _navItem(
+            icon: Icons.access_time_rounded,
+            label: 'Jadwal',
+            index: 1,
+          ),
+          // Spacer untuk button Add di tengah
+          const SizedBox(width: 16),
+          // Notifikasi
           _navItem(
             icon: Icons.notifications_outlined,
             label: 'Notifikasi',
-            index: 1,
+            index: 3,
             showBadge: hasUnverifiedOrders,
           ),
+          // Pesan
           _navItem(
             icon: Icons.message_outlined,
             label: 'Pesan',
-            index: 2,
+            index: 4,
           ),
         ],
       ),
     );
   }
 
+  /// Item navigasi biasa
   Widget _navItem({
     required IconData icon,
+    IconData? activeIcon,
     required String label,
     required int index,
     bool showBadge = false,
@@ -79,7 +95,7 @@ class CustomBottomNav extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               Icon(
-                icon,
+                isActive ? (activeIcon ?? icon) : icon,
                 size: 22,
                 color: isActive
                     ? Color(AppConstants.primaryColor)
