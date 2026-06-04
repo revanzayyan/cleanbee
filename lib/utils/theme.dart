@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'constants.dart';
 
 class AppTheme {
@@ -14,33 +15,42 @@ class AppTheme {
         surface: Color(AppConstants.backgroundColor),
       ),
       scaffoldBackgroundColor: Color(AppConstants.backgroundColor),
-      textTheme: const TextTheme(
-        headlineLarge: TextStyle(
+      textTheme: TextTheme(
+        headlineLarge: GoogleFonts.workSans(
           fontSize: 28,
           fontWeight: FontWeight.w700,
           color: Color(AppConstants.textDark),
           height: 1.2,
         ),
-        headlineMedium: TextStyle(
+        headlineMedium: GoogleFonts.workSans(
           fontSize: 22,
           fontWeight: FontWeight.w600,
           color: Color(AppConstants.textDark),
         ),
-        bodyLarge: TextStyle(
+        bodyLarge: GoogleFonts.workSans(
           fontSize: 16,
           fontWeight: FontWeight.w400,
           color: Color(AppConstants.textDark),
         ),
-        bodyMedium: TextStyle(
+        bodyMedium: GoogleFonts.workSans(
           fontSize: 14,
           fontWeight: FontWeight.w400,
           color: Color(AppConstants.textLight),
         ),
-        labelLarge: TextStyle(
+        labelLarge: GoogleFonts.workSans(
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: Colors.white,
         ),
+        displayLarge: GoogleFonts.workSans(),
+        displayMedium: GoogleFonts.workSans(),
+        displaySmall: GoogleFonts.workSans(),
+        headlineSmall: GoogleFonts.workSans(),
+        titleLarge: GoogleFonts.workSans(),
+        titleMedium: GoogleFonts.workSans(),
+        titleSmall: GoogleFonts.workSans(),
+        bodySmall: GoogleFonts.workSans(),
+        labelSmall: GoogleFonts.workSans(),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -52,7 +62,7 @@ class AppTheme {
           ),
           elevation: 2,
           shadowColor: Color(AppConstants.primaryColor).withValues(alpha: 0.3),
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.workSans(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -70,7 +80,7 @@ class AppTheme {
             borderRadius: BorderRadius.circular(16),
           ),
           elevation: 0,
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.workSans(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -111,7 +121,7 @@ class AppTheme {
             width: 1.5,
           ),
         ),
-        hintStyle: const TextStyle(
+        hintStyle: GoogleFonts.workSans(
           color: Color(AppConstants.textLight),
           fontSize: 14,
         ),
