@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../utils/constants.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../services/auth_service.dart';
+import '../services/booking_service.dart';
+import '../models/booking_model.dart';
 import 'booking_screen.dart';
 import 'jadwal_screen.dart';
 
@@ -13,7 +15,72 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  int _bottomNavIndex = 0;
+  int _bottomNavIndex = -1;
+  final BookingService _bookingService = BookingService();
+
+  bool get _hasActiveOrder => _bookingService.getActiveOrders().isNotEmpty;
+
+  void _goHome() {
+    setState(() => _bottomNavIndex = -1);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _bookingService.addListener(_onBookingChanged);
+  }
+
+  @override
+  void dispose() {
+    _bookingService.removeListener(_onBookingChanged);
+    super.dispose();
+  }
+
+  void _onBookingChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: PopScope(
+        canPop: _bottomNavIndex == -1,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          _goHome();
+        },
+        child: _getCurrentScreen(),
+      ),
+      bottomNavigationBar: CustomBottomNav(
+        currentIndex: _bottomNavIndex,
+        hasUnverifiedOrders: _hasActiveOrder,
+        onTap: (index) {
+          if (index == 2) {
+            setState(() => _bottomNavIndex = 2);
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _getCurrentScreen() {
+    switch (_bottomNavIndex) {
+      case 2:
+        return ChatScreen(onBack: _goHome);
+      default:
+        return _HomeContent(bookingService: _bookingService);
+    }
+  }
+}
+
+// ---------------------------------------------------------
+// HOME CONTENT (StatelessWidget)
+// ---------------------------------------------------------
+class _HomeContent extends StatelessWidget {
+  final BookingService bookingService;
+
+  const _HomeContent({required this.bookingService});
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -33,6 +100,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (user.email != null && user.email!.isNotEmpty) {
         return user.email!.split('@')[0];
       }
+    } catch (e) {
+      debugPrint('Error getting user: $e');
     }
 
     return 'Pengguna';
@@ -40,23 +109,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(AppConstants.backgroundColor),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 24),
-              _buildOrderStatus(),
-              const SizedBox(height: 28),
-              _buildFeatureSection(),
-              const SizedBox(height: 28),
-              _buildReviewSection(),
-              const SizedBox(height: 28),
-              SizedBox(height: 80),
-            ],
-          ),
+    final activeOrders = bookingService.getActiveOrders();
+    final statusBarHeight = MediaQuery.of(context).padding.top;
+    
+    // Hitung tinggi header: statusBar + paddingTop(16) + tinggi avatar(48) + paddingBottom(24)
+    final headerHeight = statusBarHeight + 88.0;
+
+    return CustomScrollView(
+      slivers: [
+        // ── HEADER: Sticky (Ditempel di atas) ──
+        SliverAppBar(
+          pinned: true,
+          expandedHeight: headerHeight,
+          toolbarHeight: headerHeight,
+          backgroundColor: Color(AppConstants.primaryColor),
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          flexibleSpace: _buildHeader(context, statusBarHeight, activeOrders.length),
         ),
       ),
       bottomNavigationBar: CustomBottomNav(
@@ -69,7 +138,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(28, 20, 28, 24),
+      padding: EdgeInsets.fromLTRB(28, statusBarHeight + 16, 28, 24),
       decoration: BoxDecoration(
         color: Color(AppConstants.primaryColor),
         borderRadius: const BorderRadius.only(
@@ -77,51 +146,306 @@ class _DashboardScreenState extends State<DashboardScreen> {
           bottomRight: Radius.circular(28),
         ),
       ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.2),
+              border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.4), width: 1.5),
+            ),
+            child: const Icon(Icons.person, color: Colors.white, size: 26),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.2),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.4),
-                      width: 1.5,
+                Text(
+                  _getUserName(),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${_getGreeting()} ☀️',
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white.withValues(alpha: 0.8)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SettingScreen()),
+            ),
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.15),
+              ),
+              child: const Icon(Icons.settings_outlined,
+                  color: Colors.white, size: 22),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── PESANAN AKTIF ─────────────────────────────────────────
+
+  Widget _buildOrderStatus(
+      BuildContext context, List<BookingModel> activeOrders) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Pesanan Aktif',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(AppConstants.textDark),
+                ),
+              ),
+              if (activeOrders.isNotEmpty)
+                GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const JadwalScreen()),
+                  ),
+                  child: Text(
+                    'Lihat Semua',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(AppConstants.primaryColor),
                     ),
                   ),
-                  child: const Icon(
-                    Icons.person,
-                    color: Colors.white,
-                    size: 26,
-                  ),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (activeOrders.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              decoration: BoxDecoration(
+                color: Color(AppConstants.cardColor),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 12,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Icon(Icons.inbox_outlined,
+                      size: 48,
+                      color: Color(AppConstants.textLight)
+                          .withValues(alpha: 0.4)),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Belum ada pesanan aktif',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Color(AppConstants.textLight),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Pesan sekarang untuk mulai!',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color:
+                          Color(AppConstants.textLight).withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          ...activeOrders.reversed.take(3).map((order) {
+            return _buildOrderCard(context, order: order);
+          }),
+      ],
+    );
+  }
+
+  Widget _buildOrderCard(BuildContext context, {required BookingModel order}) {
+    Color statusColor;
+    Color statusBgColor;
+
+    switch (order.status) {
+      case 'Diproses':
+        statusColor = Color(AppConstants.primaryColor);
+        statusBgColor =
+            Color(AppConstants.primaryColor).withValues(alpha: 0.1);
+        break;
+      case 'Selesai':
+        statusColor = Colors.green;
+        statusBgColor = Colors.green.withValues(alpha: 0.1);
+        break;
+      default:
+        statusColor = Colors.orange;
+        statusBgColor = Colors.orange.withValues(alpha: 0.1);
+    }
+
+    return GestureDetector(
+      onTap: () => _showOrderDetail(context, order: order),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12, left: 28, right: 28),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Color(AppConstants.cardColor),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Stack(
+                    alignment: Alignment.bottomCenter,
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 50,
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(AppConstants.accentColor),
+                        ),
+                        child: Icon(Icons.cleaning_services_rounded,
+                            color: Color(AppConstants.primaryColor)),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Color(AppConstants.primaryColor),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.star,
+                                color: Colors.yellow, size: 10),
+                            const SizedBox(width: 2),
+                            Text(
+                              '${order.petugasRating}',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          order.category,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(AppConstants.textDark),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          order.fullAddress,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(AppConstants.textLight),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: statusBgColor,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      order.status,
+                      style: TextStyle(
+                          color: statusColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _getUserName(),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _getGreeting(),
+                        'JADWAL',
                         style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(AppConstants.primaryColor),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${order.formattedDate}, ${order.timeRange}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(AppConstants.textDark),
                         ),
                       ),
                     ],
@@ -145,10 +469,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       size: 22,
                     ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -161,77 +485,251 @@ class _DashboardScreenState extends State<DashboardScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
         decoration: BoxDecoration(
-          color: Color(AppConstants.cardColor),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: Colors.white,
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(24)),
         ),
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
         child: Column(
           children: [
             Container(
-              width: 72,
-              height: 72,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(AppConstants.accentColor),
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Icon(
-                    Icons.delete_outline_rounded,
-                    size: 34,
-                    color:
-                        Color(AppConstants.primaryColor).withValues(alpha: 0.5),
-                  ),
-                  Positioned(
-                    bottom: 2,
-                    right: 2,
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Color(AppConstants.primaryColor)
-                            .withValues(alpha: 0.15),
-                        border: Border.all(
-                          color: Color(AppConstants.cardColor),
-                          width: 2,
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.sentiment_satisfied_alt_rounded,
-                        size: 14,
-                        color: Color(AppConstants.primaryColor),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                  color: Colors.grey.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(4)),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Detail Pesanan',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close)),
+              ],
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Tidak ada pesanan',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Color(AppConstants.textDark),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Color(AppConstants.primaryColor)
+                            .withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.hourglass_top_rounded,
+                              color: Color(AppConstants.primaryColor)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Sedang Diproses',
+                                    style: TextStyle(
+                                        color: Color(
+                                            AppConstants.primaryColor),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15)),
+                                const SizedBox(height: 2),
+                                Text(
+                                    'Petugas sedang menuju lokasi kamu',
+                                    style: TextStyle(
+                                        color: Color(
+                                            AppConstants.primaryColor)
+                                            .withValues(alpha: 0.7),
+                                        fontSize: 13)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text('Detail Pekerjaan',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 8),
+                    _detailRow('Kategori', order.category),
+                    _detailRow('Gedung', order.buildingType),
+                    _detailRow('Alamat Detail', order.fullAddress),
+                    _detailRow('Jadwal',
+                        '${order.formattedDate}, ${order.timeRange}'),
+                    _detailRow('ID Pesanan', order.id),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    const Text('Petugas',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 8),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(
+                        backgroundColor: Color(AppConstants.accentColor),
+                        child: Icon(Icons.person,
+                            color: Color(AppConstants.primaryColor)),
+                      ),
+                      title: Text(order.petugasName,
+                          style:
+                              const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Petugas Cleaning'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.chat_rounded,
+                                color: Color(AppConstants.primaryColor)),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ChatDetailScreen(
+                                    name: order.petugasName,
+                                    isOnline: true,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.call_rounded,
+                                color: Colors.green),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content:
+                                        Text('Menghubungi petugas...')),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    const Text('Detail Pembayaran',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.check_circle, color: Colors.green),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text('Telah Dibayar',
+                                style: TextStyle(
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                          Text('Rp 35.000',
+                              style: TextStyle(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 6),
-            const Text(
-              'Kamu belum memiliki pesanan cleaning.\nYuk buat sekarang!',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: Color(AppConstants.textLight),
-                height: 1.5,
-              ),
+            Row(
+              children: [
+                if (order.status != 'Selesai')
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20)),
+                            title: const Text('Batalkan Pesanan?'),
+                            content: const Text(
+                                'Slot jam akan tersedia kembali.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: const Text('Tidak'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(ctx);
+                                  bookingService.cancelOrder(order.id);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content:
+                                          Text('Pesanan dibatalkan'),
+                                      backgroundColor: Colors.orange,
+                                    ),
+                                  );
+                                },
+                                child: Text('Ya, Batalkan',
+                                    style: TextStyle(
+                                        color: Colors.red.shade400,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        side: BorderSide(color: Colors.red.shade400),
+                      ),
+                      child: Text('Batalkan',
+                          style: TextStyle(
+                              color: Colors.red.shade400,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                if (order.status != 'Selesai') const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Membuka live tracking...'),
+                          backgroundColor:
+                              Color(AppConstants.primaryColor),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(AppConstants.primaryColor),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                    child: const Text('Lacak Pesanan',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -323,7 +821,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Color(AppConstants.primaryColor).withValues(alpha: 0.25),
+              color: Color(AppConstants.primaryColor)
+                  .withValues(alpha: 0.25),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -343,6 +842,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 10),
             Text(
               label,
+              textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -411,12 +911,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        Icon(
-                          Icons.photo_camera_outlined,
-                          size: 40,
-                          color: Color(AppConstants.primaryColor)
-                              .withValues(alpha: 0.4),
-                        ),
+                        Icon(Icons.photo_camera_outlined,
+                            size: 40,
+                            color: Color(AppConstants.primaryColor)
+                                .withValues(alpha: 0.4)),
                         Positioned(
                           top: 10,
                           right: 10,
@@ -424,7 +922,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Color(AppConstants.primaryColor),
+                              color: Colors.white,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: const Row(
@@ -433,16 +931,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 Icon(Icons.star_rounded,
                                     color: Color(0xFFFFD700), size: 16),
                                 SizedBox(width: 4),
-                                Text(
-                                  '4.9',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                                Text('4.9',
+                                    style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.black87)),
                               ],
                             ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 10,
+                          left: 10,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.white, shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.favorite,
+                                color: Colors.red, size: 16),
                           ),
                         ),
                       ],
@@ -460,24 +967,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         color: Color(AppConstants.accentColor),
                       ),
                       child: Icon(Icons.person,
-                          size: 18, color: Color(AppConstants.primaryColor)),
+                          size: 18,
+                          color: Color(AppConstants.primaryColor)),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Ahmad Fauzi',
+                          const Text('Revan Zayyan',
                               style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(AppConstants.textDark))),
+                                  color:
+                                      Color(AppConstants.textDark))),
                           const SizedBox(height: 2),
                           Row(
                             children: List.generate(
-                                5,
-                                (_) => Icon(Icons.star_rounded,
-                                    size: 14, color: Color(0xFFFFD700))),
+                              5,
+                              (_) => const Icon(Icons.star_rounded,
+                                  size: 14, color: Color(0xFFFFD700)),
+                            ),
                           ),
                         ],
                       ),
@@ -495,6 +1005,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       fontSize: 13,
                       color: Color(AppConstants.textLight),
                       height: 1.5),
+                ),
+                const SizedBox(height: 16),
+                Divider(color: Colors.grey.withValues(alpha: 0.2)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Balas ulasan...',
+                          hintStyle: const TextStyle(fontSize: 13),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide(
+                                color:
+                                    Colors.grey.withValues(alpha: 0.3)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide(
+                                color:
+                                    Colors.grey.withValues(alpha: 0.3)),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('Balasan terkirim')),
+                        );
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor:
+                            Color(AppConstants.primaryColor),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        backgroundColor: Color(AppConstants.primaryColor)
+                            .withValues(alpha: 0.1),
+                      ),
+                      child: const Text('Kirim',
+                          style:
+                              TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ],
                 ),
               ],
             ),
