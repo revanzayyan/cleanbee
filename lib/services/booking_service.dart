@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/booking_model.dart';
+import 'notification_service_angga.dart';
 
 class BookingService extends ChangeNotifier {
   static final BookingService _instance = BookingService._internal();
@@ -105,6 +107,14 @@ class BookingService extends ChangeNotifier {
       final savedOrder = order.copyWith(id: docRef.id);
       _orders.add(savedOrder);
       notifyListeners();
+
+      // Create notification for admin about the new booking
+      await NotificationServiceAngga().addNotification(
+        userId: 'admin',
+        title: 'Pesanan Baru Masuk 🧹',
+        body: 'Pesanan oleh ${order.userEmail ?? "User"} untuk ${order.category} pada ${order.formattedDate} telah diterima.',
+      );
+
       return savedOrder;
     } catch (e) {
       debugPrint('Error saving to Firebase: $e');
@@ -114,13 +124,90 @@ class BookingService extends ChangeNotifier {
     }
   }
 
-  void cancelOrder(String orderId) => updateOrderStatus(orderId, 'Dibatalkan');
+  StreamSubscription<QuerySnapshot>? _bookingsSubscription;
+
+  void syncUserBookings(String userId) {
+    _bookingsSubscription?.cancel();
+    _bookingsSubscription = _firestore.collection('bookings')
+        .where('user_uid', isEqualTo: userId)
+        .snapshots()
+        .listen((snapshot) {
+          _orders.clear();
+          for (var doc in snapshot.docs) {
+            _orders.add(BookingModel.fromMap(doc.data(), doc.id));
+          }
+          // Sort by created_at descending
+          _orders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          notifyListeners();
+        });
+  }
+
+  void disposeSync() {
+    _bookingsSubscription?.cancel();
+  }
+
+  Stream<List<BookingModel>> getBookingsStream() {
+    return _firestore.collection('bookings')
+        .orderBy('created_at', descending: true)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.map((doc) {
+            return BookingModel.fromMap(doc.data(), doc.id);
+          }).toList();
+        });
+  }
+
+  Future<void> cancelOrder(String orderId) async {
+    await updateOrderStatusInFirestore(orderId, 'Dibatalkan');
+  }
+
+  Future<void> updateOrderStatusInFirestore(String orderId, String newStatus) async {
+    try {
+      // Fetch booking details first to know who the user is
+      final docSnap = await _firestore.collection('bookings').doc(orderId).get();
+      if (docSnap.exists) {
+        final data = docSnap.data()!;
+        final userUid = data['user_uid'] as String?;
+        final category = data['category'] ?? 'Layanan Kebersihan';
+        
+        await _firestore.collection('bookings').doc(orderId).update({'status': newStatus});
+
+        // Update local status
+        final index = _orders.indexWhere((o) => o.id == orderId);
+        if (index != -1) {
+          _orders[index] = _orders[index].copyWith(status: newStatus);
+          notifyListeners();
+        }
+
+        // Send notification to resident
+        if (userUid != null) {
+          String notifTitle = 'Update Status Pesanan 📢';
+          String notifBody = 'Pesanan Anda untuk $category statusnya kini berubah menjadi: $newStatus.';
+          
+          if (newStatus == 'Diproses') {
+            notifTitle = 'Pesanan Terkonfirmasi! 🎉';
+            notifBody = 'Pesanan $category Anda telah diverifikasi oleh Admin. Petugas segera menuju lokasi.';
+          } else if (newStatus == 'Dibatalkan') {
+            notifTitle = 'Pesanan Dibatalkan/Ditolak ⚠️';
+            notifBody = 'Pesanan $category Anda telah dibatalkan atau ditolak.';
+          } else if (newStatus == 'Selesai') {
+            notifTitle = 'Pekerjaan Selesai! ✨';
+            notifBody = 'Layanan $category telah selesai dikerjakan. Silakan berikan ulasan Anda.';
+          }
+
+          await NotificationServiceAngga().addNotification(
+            userId: userUid,
+            title: notifTitle,
+            body: notifBody,
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error updating status in Firestore: $e');
+    }
+  }
 
   void updateOrderStatus(String orderId, String newStatus) {
-    final index = _orders.indexWhere((o) => o.id == orderId);
-    if (index != -1) {
-      _orders[index] = _orders[index].copyWith(status: newStatus);
-      notifyListeners();
-    }
+    updateOrderStatusInFirestore(orderId, newStatus);
   }
 }

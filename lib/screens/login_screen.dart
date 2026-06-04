@@ -4,7 +4,7 @@ import '../widgets/custom_text_field.dart';
 import '../widgets/social_button.dart';
 import '../services/auth_service.dart';
 import 'dashboard_screen.dart';
-import 'admin_dashboard_screen.dart';
+import 'admin_dashboard_screen_angga.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -37,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (email.toLowerCase() == 'asoy2023@gmail.com' && password == 'siadmin') {
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
+        MaterialPageRoute(builder: (context) => const AdminDashboardScreenAngga()),
         (route) => false,
       );
       return;

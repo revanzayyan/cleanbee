@@ -4,11 +4,13 @@ import '../widgets/custom_bottom_nav.dart';
 import '../services/auth_service.dart';
 import '../services/booking_service.dart';
 import '../models/booking_model.dart';
+import '../services/notification_service_angga.dart';
 import 'booking_screen.dart';
 import 'setting_screen.dart';
 import 'chat_screen.dart';
 import 'chat_detail_screen.dart';
 import 'jadwal_screen.dart';
+import 'notification_screen_angga.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -21,8 +23,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _bottomNavIndex = -1;
   final BookingService _bookingService = BookingService();
 
-  bool get _hasActiveOrder => _bookingService.getActiveOrders().isNotEmpty;
-
   void _goHome() {
     setState(() => _bottomNavIndex = -1);
   }
@@ -31,11 +31,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _bookingService.addListener(_onBookingChanged);
+    
+    // Sync current user bookings from Firestore in real-time
+    final currentUser = AuthService().currentUser;
+    if (currentUser != null) {
+      _bookingService.syncUserBookings(currentUser.uid);
+    }
   }
 
   @override
   void dispose() {
     _bookingService.removeListener(_onBookingChanged);
+    _bookingService.disposeSync();
     super.dispose();
   }
 
@@ -45,6 +52,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userId = AuthService().currentUser?.uid ?? '';
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: PopScope(
@@ -55,13 +64,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
         },
         child: _getCurrentScreen(),
       ),
-      bottomNavigationBar: CustomBottomNav(
-        currentIndex: _bottomNavIndex,
-        hasUnverifiedOrders: _hasActiveOrder,
-        onTap: (index) {
-          if (index == 2) {
-            setState(() => _bottomNavIndex = 2);
-          }
+      bottomNavigationBar: StreamBuilder<int>(
+        stream: NotificationServiceAngga().getUnreadCountStream(userId),
+        builder: (context, snapshot) {
+          final unreadCount = snapshot.data ?? 0;
+          return CustomBottomNav(
+            currentIndex: _bottomNavIndex,
+            hasUnverifiedOrders: unreadCount > 0,
+            onTap: (index) {
+              if (index == 0) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const JadwalScreen()),
+                );
+              } else if (index == 1) {
+                setState(() => _bottomNavIndex = 1);
+              } else if (index == 2) {
+                setState(() => _bottomNavIndex = 2);
+              }
+            },
+          );
         },
       ),
     );
@@ -69,6 +91,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _getCurrentScreen() {
     switch (_bottomNavIndex) {
+      case 1:
+        return NotificationScreenAngga(onBack: _goHome);
       case 2:
         return ChatScreen(onBack: _goHome);
       default:
