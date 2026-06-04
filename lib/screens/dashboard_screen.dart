@@ -5,9 +5,6 @@ import '../services/auth_service.dart';
 import '../services/booking_service.dart';
 import '../models/booking_model.dart';
 import 'booking_screen.dart';
-import 'setting_screen.dart';
-import 'chat_screen.dart';
-import 'chat_detail_screen.dart';
 import 'jadwal_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -94,19 +91,19 @@ class _HomeContent extends StatelessWidget {
   }
 
   String _getUserName() {
-    try {
-      final user = AuthService().currentUser;
-      if (user != null) {
-        if (user.displayName != null && user.displayName!.isNotEmpty) {
-          return user.displayName!;
-        }
-        if (user.email != null && user.email!.isNotEmpty) {
-          return user.email!.split('@')[0];
-        }
+    final user = AuthService().currentUser;
+
+    if (user != null) {
+      if (user.displayName != null && user.displayName!.isNotEmpty) {
+        return user.displayName!;
+      }
+      if (user.email != null && user.email!.isNotEmpty) {
+        return user.email!.split('@')[0];
       }
     } catch (e) {
       debugPrint('Error getting user: $e');
     }
+
     return 'Pengguna';
   }
 
@@ -130,35 +127,15 @@ class _HomeContent extends StatelessWidget {
           automaticallyImplyLeading: false,
           flexibleSpace: _buildHeader(context, statusBarHeight, activeOrders.length),
         ),
-
-        // ── PESANAN AKTIF ──
-        SliverToBoxAdapter(
-          child: _buildOrderStatus(context, activeOrders),
-        ),
-
-        const SliverToBoxAdapter(child: SizedBox(height: 28)),
-
-        // ── FITUR APLIKASI ──
-        SliverToBoxAdapter(
-          child: _buildFeatureSection(context),
-        ),
-
-        const SliverToBoxAdapter(child: SizedBox(height: 28)),
-
-        // ── ULASAN PELANGGAN ──
-        SliverToBoxAdapter(
-          child: _buildReviewSection(context),
-        ),
-
-        // Spacer bawah agar tidak ketutupan bottom nav
-        const SliverToBoxAdapter(child: SizedBox(height: 90)),
-      ],
+      ),
+      bottomNavigationBar: CustomBottomNav(
+        currentIndex: _bottomNavIndex,
+        onTap: (index) => setState(() => _bottomNavIndex = index),
+      ),
     );
   }
 
-  // ─── HEADER ────────────────────────────────────────────────
-
-  Widget _buildHeader(BuildContext context, double statusBarHeight, int orderCount) {
+  Widget _buildHeader() {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(28, statusBarHeight + 16, 28, 24),
@@ -473,12 +450,23 @@ class _HomeContent extends StatelessWidget {
                       ),
                     ],
                   ),
-                  Text(
-                    'Klik untuk lihat detail',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Color(AppConstants.primaryColor),
-                      fontWeight: FontWeight.bold,
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () {
+                    // TODO: Navigasi ke halaman Setting
+                  },
+                  child: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.15),
+                    ),
+                    child: const Icon(
+                      Icons.settings_outlined,
+                      color: Colors.white,
+                      size: 22,
                     ),
                   ),
                 ],
@@ -490,15 +478,12 @@ class _HomeContent extends StatelessWidget {
     );
   }
 
-  // ─── DETAIL BOTTOM SHEET ───────────────────────────────────
-
-  void _showOrderDetail(BuildContext context, {required BookingModel order}) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
+  Widget _buildOrderStatus() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 28),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius:
@@ -752,28 +737,7 @@ class _HomeContent extends StatelessWidget {
     );
   }
 
-  Widget _detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-              width: 120,
-              child:
-                  Text(label, style: const TextStyle(color: Colors.grey))),
-          const Text(': '),
-          Expanded(
-              child: Text(value,
-                  style: const TextStyle(fontWeight: FontWeight.w600))),
-        ],
-      ),
-    );
-  }
-
-  // ─── FITUR APLIKASI ────────────────────────────────────────
-
-  Widget _buildFeatureSection(BuildContext context) {
+  Widget _buildFeatureSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
@@ -790,20 +754,50 @@ class _HomeContent extends StatelessWidget {
           const SizedBox(height: 16),
           Row(
             children: [
+              // ✅ Jadwal — navigasi ke JadwalScreen
               Expanded(
-                child: _featureCard(context,
-                    icon: Icons.calendar_month_rounded, label: 'Jadwal'),
+                child: _featureCard(
+                  icon: Icons.calendar_month_rounded,
+                  label: 'Jadwal',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const JadwalScreen(),
+                      ),
+                    );
+                  },
+                ),
               ),
               const SizedBox(width: 12),
+              // ✅ Memesan — navigasi ke BookingScreen
               Expanded(
-                child: _featureCard(context,
-                    icon: Icons.add_shopping_cart_rounded,
-                    label: 'Memesan'),
+                child: _featureCard(
+                  icon: Icons.add_shopping_cart_rounded,
+                  label: 'Memesan',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const BookingScreen(),
+                      ),
+                    );
+                  },
+                ),
               ),
               const SizedBox(width: 12),
+              // ✅ CS — snackbar
               Expanded(
-                child: _featureCard(context,
-                    icon: Icons.headset_mic_rounded, label: 'CS'),
+                child: _featureCard(
+                  icon: Icons.headset_mic_rounded,
+                  label: 'CS',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Menghubungi Customer Service...')),
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -812,30 +806,14 @@ class _HomeContent extends StatelessWidget {
     );
   }
 
-  Widget _featureCard(BuildContext context,
-      {required IconData icon, required String label}) {
+  // ✅ DIPERBAIKI: GestureDetector sekarang memanggil onTap dari parameter
+  Widget _featureCard({
+    required IconData icon,
+    required String label,
+    VoidCallback? onTap,
+  }) {
     return GestureDetector(
-      onTap: () {
-        if (label == 'Jadwal') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const JadwalScreen()),
-          );
-        } else if (label == 'Memesan') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const BookingScreen()),
-          );
-        } else if (label == 'CS') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const ChatDetailScreen(
-                  name: 'Customer Service', isOnline: true),
-            ),
-          );
-        }
-      },
+      onTap: onTap, // ← langsung pakai parameter, bukan hardcode label
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
@@ -877,9 +855,7 @@ class _HomeContent extends StatelessWidget {
     );
   }
 
-  // ─── ULASAN PELANGGAN ──────────────────────────────────────
-
-  Widget _buildReviewSection(BuildContext context) {
+  Widget _buildReviewSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
