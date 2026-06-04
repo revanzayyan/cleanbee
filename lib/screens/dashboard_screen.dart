@@ -25,7 +25,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() => _bottomNavIndex = 0);
   }
 
-  // ✅ Method khusus untuk smooth switch ke Jadwal
   void _goToJadwal() {
     setState(() => _bottomNavIndex = 1);
   }
@@ -98,8 +97,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color:
-                            const Color(0xFF1A3A6B).withValues(alpha: (0.35)),
+                        color: const Color(0xFF1A3A6B).withValues(alpha: 0.35),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -140,7 +138,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _getCurrentScreen() {
     switch (_bottomNavIndex) {
       case 0:
-        // ✅ Kirim callback _goToJadwal ke HomeContent
         return _HomeContent(
             bookingService: _bookingService, onGoToJadwal: _goToJadwal);
       case 1:
@@ -148,7 +145,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 3:
         return _PlaceholderScreen(title: 'Notifikasi', onBack: _goHome);
       case 4:
-        return ChatScreen(onBack: _goHome);
+        return _ChatScreenPlaceholder(onBack: _goHome);
       default:
         return _HomeContent(
             bookingService: _bookingService, onGoToJadwal: _goToJadwal);
@@ -176,12 +173,32 @@ class _PlaceholderScreen extends StatelessWidget {
   }
 }
 
+// ✅ Placeholder for ChatScreen
+class _ChatScreenPlaceholder extends StatelessWidget {
+  final VoidCallback onBack;
+  const _ChatScreenPlaceholder({required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Chat'),
+        leading:
+            IconButton(icon: const Icon(Icons.arrow_back), onPressed: onBack),
+      ),
+      body: const Center(
+          child: Text('Halaman Chat',
+              style: TextStyle(fontSize: 18, color: Colors.grey))),
+    );
+  }
+}
+
 // ---------------------------------------------------------
 // HOME CONTENT
 // ---------------------------------------------------------
 class _HomeContent extends StatelessWidget {
   final BookingService bookingService;
-  final VoidCallback onGoToJadwal; // ✅ Tambahkan parameter ini
+  final VoidCallback onGoToJadwal;
 
   const _HomeContent(
       {required this.bookingService, required this.onGoToJadwal});
@@ -195,14 +212,17 @@ class _HomeContent extends StatelessWidget {
   }
 
   String _getUserName() {
-    final user = AuthService().currentUser;
+    // ✅ FIX: Added try block
+    try {
+      final user = AuthService().currentUser;
 
-    if (user != null) {
-      if (user.displayName != null && user.displayName!.isNotEmpty) {
-        return user.displayName!;
-      }
-      if (user.email != null && user.email!.isNotEmpty) {
-        return user.email!.split('@')[0];
+      if (user != null) {
+        if (user.displayName != null && user.displayName!.isNotEmpty) {
+          return user.displayName!;
+        }
+        if (user.email != null && user.email!.isNotEmpty) {
+          return user.email!.split('@')[0];
+        }
       }
     } catch (e) {
       debugPrint('Error getting user: $e');
@@ -250,8 +270,8 @@ class _HomeContent extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [
-            Color(0xFF0284C7), // Biru lebih tua di atas
-            Color(0xFF38BDF8), // Biru lebih muda di bawah
+            Color(0xFF0284C7),
+            Color(0xFF38BDF8),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -298,8 +318,8 @@ class _HomeContent extends StatelessWidget {
                 Text(
                   _getUserName(),
                   style: const TextStyle(
-                    fontSize: 18, // Diperbesar sedikit
-                    fontWeight: FontWeight.w800, // Extra bold
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
                     color: Colors.white,
                     shadows: [
                       Shadow(
@@ -332,11 +352,12 @@ class _HomeContent extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          // ✅ 6. TOMBOL SETTING: Diberi efek mengambang juga
+          // ✅ FIX: Use placeholder instead of undefined SettingScreen
           GestureDetector(
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const SettingScreen()),
+              MaterialPageRoute(
+                  builder: (context) => const _SettingScreenPlaceholder()),
             ),
             child: Container(
               width: 44,
@@ -381,7 +402,6 @@ class _HomeContent extends StatelessWidget {
                       color: Color(AppConstants.textDark))),
               if (activeOrders.isNotEmpty)
                 GestureDetector(
-                  // ✅ GANTI: Jangan push, tapi pakai callback smooth switch
                   onTap: onGoToJadwal,
                   child: Text('Lihat Semua',
                       style: TextStyle(
@@ -660,12 +680,14 @@ class _HomeContent extends StatelessWidget {
                                 color: Color(AppConstants.primaryColor)),
                             onPressed: () {
                               Navigator.pop(context);
+                              // ✅ FIX: Use placeholder
                               Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (context) => ChatDetailScreen(
-                                          name: order.petugasName,
-                                          isOnline: true)));
+                                      builder: (context) =>
+                                          _ChatDetailPlaceholder(
+                                              name: order.petugasName,
+                                              isOnline: true)));
                             }),
                         IconButton(
                             icon: const Icon(Icons.call_rounded,
@@ -803,17 +825,14 @@ class _HomeContent extends StatelessWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              // ✅ Jadwal — navigasi ke JadwalScreen
               Expanded(
                   child: _featureCard(context,
                       icon: Icons.calendar_month_rounded, label: 'Jadwal')),
               const SizedBox(width: 12),
-              // ✅ Memesan — navigasi ke BookingScreen
               Expanded(
                   child: _featureCard(context,
                       icon: Icons.add_shopping_cart_rounded, label: 'Memesan')),
               const SizedBox(width: 12),
-              // ✅ CS — snackbar
               Expanded(
                   child: _featureCard(context,
                       icon: Icons.headset_mic_rounded, label: 'CS')),
@@ -824,16 +843,15 @@ class _HomeContent extends StatelessWidget {
     );
   }
 
-  // ✅ DIPERBAIKI: GestureDetector sekarang memanggil onTap dari parameter
-  Widget _featureCard({
+  // ✅ FIX: Removed unused onTap parameter
+  Widget _featureCard(
+    BuildContext context, {
     required IconData icon,
     required String label,
-    VoidCallback? onTap,
   }) {
     return GestureDetector(
       onTap: () {
         if (label == 'Jadwal') {
-          // ✅ GANTI: Smooth switch ke tab Jadwal
           onGoToJadwal();
         } else if (label == 'Memesan') {
           Navigator.push(context,
@@ -842,7 +860,7 @@ class _HomeContent extends StatelessWidget {
           Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (context) => const ChatDetailScreen(
+                  builder: (context) => const _ChatDetailPlaceholder(
                       name: 'Customer Service', isOnline: true)));
         }
       },
@@ -1038,6 +1056,43 @@ class _HomeContent extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ✅ Placeholder classes for undefined screens
+class _SettingScreenPlaceholder extends StatelessWidget {
+  const _SettingScreenPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Pengaturan')),
+      body: const Center(
+        child: Text('Halaman Pengaturan',
+            style: TextStyle(fontSize: 18, color: Colors.grey)),
+      ),
+    );
+  }
+}
+
+class _ChatDetailPlaceholder extends StatelessWidget {
+  final String name;
+  final bool isOnline;
+
+  const _ChatDetailPlaceholder({
+    required this.name,
+    required this.isOnline,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(name)),
+      body: Center(
+        child: Text('Chat dengan $name',
+            style: const TextStyle(fontSize: 18, color: Colors.grey)),
       ),
     );
   }
