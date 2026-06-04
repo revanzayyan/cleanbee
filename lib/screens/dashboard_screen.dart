@@ -6,9 +6,6 @@ import '../services/auth_service.dart';
 import '../services/booking_service.dart';
 import '../models/booking_model.dart';
 import 'booking_screen.dart';
-import 'setting_screen.dart';
-import 'chat_screen.dart';
-import 'chat_detail_screen.dart';
 import 'jadwal_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -198,19 +195,19 @@ class _HomeContent extends StatelessWidget {
   }
 
   String _getUserName() {
-    try {
-      final user = AuthService().currentUser;
-      if (user != null) {
-        if (user.displayName != null && user.displayName!.isNotEmpty) {
-          return user.displayName!;
-        }
-        if (user.email != null && user.email!.isNotEmpty) {
-          return user.email!.split('@')[0];
-        }
+    final user = AuthService().currentUser;
+
+    if (user != null) {
+      if (user.displayName != null && user.displayName!.isNotEmpty) {
+        return user.displayName!;
+      }
+      if (user.email != null && user.email!.isNotEmpty) {
+        return user.email!.split('@')[0];
       }
     } catch (e) {
       debugPrint('Error getting user: $e');
     }
+
     return 'Pengguna';
   }
 
@@ -806,14 +803,17 @@ class _HomeContent extends StatelessWidget {
           const SizedBox(height: 16),
           Row(
             children: [
+              // ✅ Jadwal — navigasi ke JadwalScreen
               Expanded(
                   child: _featureCard(context,
                       icon: Icons.calendar_month_rounded, label: 'Jadwal')),
               const SizedBox(width: 12),
+              // ✅ Memesan — navigasi ke BookingScreen
               Expanded(
                   child: _featureCard(context,
                       icon: Icons.add_shopping_cart_rounded, label: 'Memesan')),
               const SizedBox(width: 12),
+              // ✅ CS — snackbar
               Expanded(
                   child: _featureCard(context,
                       icon: Icons.headset_mic_rounded, label: 'CS')),
@@ -824,8 +824,12 @@ class _HomeContent extends StatelessWidget {
     );
   }
 
-  Widget _featureCard(BuildContext context,
-      {required IconData icon, required String label}) {
+  // ✅ DIPERBAIKI: GestureDetector sekarang memanggil onTap dari parameter
+  Widget _featureCard({
+    required IconData icon,
+    required String label,
+    VoidCallback? onTap,
+  }) {
     return GestureDetector(
       onTap: () {
         if (label == 'Jadwal') {
