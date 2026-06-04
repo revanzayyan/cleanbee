@@ -3,8 +3,6 @@ import '../utils/constants.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../services/auth_service.dart';
 import 'booking_screen.dart';
-
-// 1. IMPORT file jadwal_screen agar bisa dipanggil
 import 'jadwal_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -29,18 +27,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final user = AuthService().currentUser;
 
     if (user != null) {
-      // 1. Coba ambil displayName (Biasanya terisi dari Login Google)
       if (user.displayName != null && user.displayName!.isNotEmpty) {
         return user.displayName!;
       }
-
-      // 2. Jika tidak ada displayName, ambil email lalu potong bagian "@..."
       if (user.email != null && user.email!.isNotEmpty) {
         return user.email!.split('@')[0];
       }
     }
 
-    // 3. Fallback jika tidak ada data sama sekali
     return 'Pengguna';
   }
 
@@ -65,7 +59,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
       ),
-      // ── Panggil CustomBottomNav di sini ──
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _bottomNavIndex,
         onTap: (index) => setState(() => _bottomNavIndex = index),
@@ -73,7 +66,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // header
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
@@ -136,7 +128,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // ── Ikon Setting ──
                 GestureDetector(
                   onTap: () {
                     // TODO: Navigasi ke halaman Setting
@@ -163,7 +154,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // status pesanan
   Widget _buildOrderStatus() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -249,7 +239,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // fitur aplikasi (SUDAH DIPERBAIKI)
   Widget _buildFeatureSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -267,47 +256,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 16),
           Row(
             children: [
-              // Fitur Jadwal (SUDAH BERFUNGSI)
+              // ✅ Jadwal — navigasi ke JadwalScreen
               Expanded(
-                  child: _featureCard(
-                      icon: Icons.calendar_month_rounded, 
-                      label: 'Jadwal',
-                      onTap: () {
-                        // Berpindah ke halaman Jadwal
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const JadwalScreen(),
-                          ),
-                        );
-                      },
-                  )
+                child: _featureCard(
+                  icon: Icons.calendar_month_rounded,
+                  label: 'Jadwal',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const JadwalScreen(),
+                      ),
+                    );
+                  },
+                ),
               ),
               const SizedBox(width: 12),
-              // Fitur Memesan
+              // ✅ Memesan — navigasi ke BookingScreen
               Expanded(
-                  child: _featureCard(
-                      icon: Icons.add_shopping_cart_rounded, 
-                      label: 'Memesan',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Fitur Memesan belum tersedia')),
-                        );
-                      },
-                  )
+                child: _featureCard(
+                  icon: Icons.add_shopping_cart_rounded,
+                  label: 'Memesan',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const BookingScreen(),
+                      ),
+                    );
+                  },
+                ),
               ),
               const SizedBox(width: 12),
-              // Fitur CS
+              // ✅ CS — snackbar
               Expanded(
-                  child: _featureCard(
-                      icon: Icons.headset_mic_rounded, 
-                      label: 'CS',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Menghubungi Customer Service...')),
-                        );
-                      },
-                  )
+                child: _featureCard(
+                  icon: Icons.headset_mic_rounded,
+                  label: 'CS',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Menghubungi Customer Service...')),
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -316,23 +308,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Widget Kartu Fitur (SUDAH DIPERBAIKI: Menambahkan VoidCallback)
+  // ✅ DIPERBAIKI: GestureDetector sekarang memanggil onTap dari parameter
   Widget _featureCard({
-    required IconData icon, 
+    required IconData icon,
     required String label,
-    VoidCallback? onTap, // Parameter fungsi tap
+    VoidCallback? onTap,
   }) {
     return GestureDetector(
-      onTap: () {
-        if (label == 'Memesan') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const BookingScreen(),
-            ),
-          );
-        }
-      },
+      onTap: onTap, // ← langsung pakai parameter, bukan hardcode label
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
@@ -372,7 +355,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ulasan pelanggan
   Widget _buildReviewSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
