@@ -47,69 +47,50 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   }
 
   Future<void> _confirmBooking() async {
-    print('🔵 [DEBUG] _confirmBooking() started');
     setState(() => _isSaving = true);
 
     final confirmedBooking = widget.booking.copyWith(category: _selectedCategory);
-    print('🔵 [DEBUG] Booking created: ${confirmedBooking.id}');
 
     try {
-      print('🔵 [DEBUG] Calling saveBooking...');
       final result = await BookingService().saveBooking(confirmedBooking);
-      print('🔵 [DEBUG] saveBooking returned: $result');
-      
       if (!mounted) {
-        print('🔵 [DEBUG] Widget not mounted, returning');
+        setState(() => _isSaving = false);
         return;
       }
       
       if (result != null) {
-        print('🔵 [DEBUG] Result is not null, booking saved successfully');
-        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pemesanan berhasil disimpan.')));
         
-        // Delay before navigation for SnackBar to display
-        await Future.delayed(const Duration(milliseconds: 500));
-        
+        // Small delay for SnackBar to show
+        await Future.delayed(const Duration(milliseconds: 300));
         if (!mounted) {
-          print('🔵 [DEBUG] Widget not mounted after delay, returning');
+          setState(() => _isSaving = false);
           return;
         }
         
-        // Determine amount based on category
-        double amount = 150000; // Default for Kamar Tidur + Kamar Mandi
-        if (_selectedCategory == 'Kamar Tidur') {
-          amount = 150000;
-        } else if (_selectedCategory == 'Kamar Mandi') {
-          amount = 100000;
-        }
-        
-        print('🔵 [DEBUG] About to navigate to PaymentMethodScreen with amount: $amount');
-        // Navigate to payment screen
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PaymentMethodScreen(
-              booking: result,
-              amount: amount,
+        // Navigate directly without waiting for return value
+        if (mounted) {
+          setState(() => _isSaving = false);
+          // Force navigation to payment. Do not allow any “paid” UI/state to short-circuit this screen.
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PaymentMethodScreen(
+                booking: result,
+                amount: 25000, // TODO: Replace with dynamic pricing based on category
+              ),
             ),
-          ),
-        ).then((_) {
-          print('🔵 [DEBUG] Returned from PaymentMethodScreen');
-          // Reset loading state when returning from payment screen
-          if (mounted) {
-            setState(() => _isSaving = false);
-          }
-        });
+          );
+        }
       } else {
-        print('🔵 [DEBUG] Result is null - slot not available');
-        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maaf, slot sudah penuh.')));
         setState(() => _isSaving = false);
       }
     } catch (e) {
-      print('❌ [ERROR] Exception in _confirmBooking: $e');
-      if (!mounted) return;
+      if (!mounted) {
+        setState(() => _isSaving = false);
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan pemesanan: $e')));
       setState(() => _isSaving = false);
     }

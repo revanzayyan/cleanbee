@@ -98,8 +98,7 @@ class BookingService extends ChangeNotifier {
 
   // Digunakan oleh BookingConfirmationScreen
   Future<BookingModel?> saveBooking(BookingModel order) async {
-    // TODO: Re-enable slot availability check after testing payment flow
-    // if (!isSlotAvailable(order.scheduleKey, order.timeRange)) return null;
+    if (!isSlotAvailable(order.scheduleKey, order.timeRange)) return null;
 
     try {
       final docRef = await _firestore.collection('bookings').add(order.toMap());

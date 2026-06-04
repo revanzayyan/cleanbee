@@ -317,8 +317,10 @@ class _PaymentVerificationScreenState extends State<PaymentVerificationScreen> {
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () {
-              Navigator.of(context).popUntil((route) => route.isFirst);
+              // Return to the payment screen only (do NOT pop to the dashboard).
+              Navigator.pop(context, true);
             },
+
             style: ElevatedButton.styleFrom(
               backgroundColor: Color(AppConstants.primaryColor),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -327,6 +329,7 @@ class _PaymentVerificationScreenState extends State<PaymentVerificationScreen> {
             child: const Text('Selesai', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
           ),
         ),
+
       ],
     );
   }

@@ -40,8 +40,14 @@ const db = admin.firestore();
 
 // Configuration
 const DOKU_CLIENT_SECRET = process.env.DOKU_CLIENT_SECRET || 'SK-6By9fA8g4AMqnOGCAYE9';
+const DOKU_CLIENT_ID = process.env.DOKU_CLIENT_ID || 'BRN-0262-1780146553005';
+
+// NOTE: webhook secret kept for compatibility (signature is verified using DOKU client secret)
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || 'your-webhook-secret-key';
+
+const DOKU_BASE_URL = process.env.DOKU_BASE_URL || 'https://staging-api.doku.com';
 const PORT = process.env.PORT || 3000;
+
 
 // ============================================================================
 // HEALTH CHECK ENDPOINT
@@ -271,9 +277,116 @@ app.post('/api/payment/verify/:referenceId', async (req, res) => {
 });
 
 // ============================================================================
+// CREATE VIRTUAL ACCOUNT (PROXY ENDPOINT)
+// ============================================================================
+app.post('/api/payment/virtual-account/create', async (req, res) => {
+  const requestId = generateRequestId();
+  console.log(`\n🧾 [${requestId}] Create Virtual Account proxy request...`);
+
+  try {
+    const {
+      bookingId,
+      amount,
+      description,
+      bankCode,
+      customerId,
+      customerName,
+      // optional: allow caller to override
+      callbackUrl,
+    } = req.body || {};
+
+    if (!bookingId || !amount || !description || !bankCode) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        requestId,
+      });
+    }
+
+    const timestamp = new Date().toISOString();
+    const payload = {
+      amount: Math.round(Number(amount)),
+      bank_code: bankCode,
+      invoice_ref_no: bookingId,
+      reference: `VA-${bookingId}-${Date.now()}`,
+      currency: 'IDR',
+      order: {
+        items: [
+          {
+            name: description,
+            quantity: 1,
+            price: Math.round(Number(amount)),
+          },
+        ],
+      },
+      customer: {
+        id: customerId || bookingId,
+        name: customerName || 'Customer',
+      },
+      callback_url: callbackUrl || 'https://headlock-sternum-tinker.ngrok-free.dev/api/payment/callback',
+      expiry: {
+        unit: 'HOUR',
+        value: 24,
+      },
+    };
+
+    // Signature for DOKU
+    // signatureString = method\npath\nclientId\ntimestamp\nbody
+    const path = '/payment/virtual-account-number/v2/create';
+    const signatureString = `POST\n${path}\n${DOKU_CLIENT_ID}\n${timestamp}\n${JSON.stringify(payload)}`;
+    const signature = crypto
+      .createHmac('sha256', DOKU_CLIENT_SECRET)
+      .update(signatureString)
+      .digest('hex');
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `DOKU ${DOKU_CLIENT_ID}:${signature}`,
+      'X-DOKU-Timestamp': timestamp,
+      'X-DOKU-Idempotency-Key': String(Date.now()),
+    };
+
+    // Call DOKU server-to-server (no browser/CORS issues)
+    const fetch = global.fetch || (await import('node-fetch')).default;
+
+    const r = await fetch(`${DOKU_BASE_URL}${path}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    const text = await r.text();
+    let data;
+    try { data = JSON.parse(text); } catch { data = { raw: text }; }
+
+    if (!r.ok) {
+      console.error(`❌ [${requestId}] DOKU error`, { status: r.status, data });
+      return res.status(502).json({
+        error: 'Failed to create virtual account via DOKU',
+        requestId,
+        statusCode: r.status,
+        data,
+      });
+    }
+
+    // Return DOKU response as-is (Flutter parses it)
+    return res.json({
+      requestId,
+      data,
+    });
+  } catch (error) {
+    console.error(`❌ [${requestId}] Proxy error:`, error);
+    return res.status(500).json({
+      error: error.message || String(error),
+      requestId,
+    });
+  }
+});
+
+// ============================================================================
 // PAYMENT STATUS ENDPOINT
 // ============================================================================
 app.get('/api/payment/:referenceId/status', async (req, res) => {
+
   const { referenceId } = req.params;
 
   try {

@@ -21,6 +21,14 @@ class PaymentMethodScreen extends StatefulWidget {
 class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   String? _selectedMethod;
 
+  @override
+  void initState() {
+    super.initState();
+    // Default method so tapping "Lanjutkan" always navigates.
+    _selectedMethod = 'qr_code';
+  }
+
+
   Widget _methodCard({
     required String method,
     required String title,
