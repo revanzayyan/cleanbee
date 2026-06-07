@@ -33,7 +33,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _bookingService.addListener(_onBookingChanged);
+
+    // Pastikan service membaca Firestore, supaya status dari webhook (Diproses) muncul di UI.
+    final user = AuthService().currentUser;
+    final uid = user?.uid;
+    if (uid != null && uid.isNotEmpty) {
+      // ignore: invalid_use_of_private_member
+      // ignore: invalid_use_of_visible_for_testing_member
+      // Memanggil method internal untuk memulai snapshot listener.
+      _bookingService.ensureListening(uid);
+
+    }
   }
+
 
   @override
   void dispose() {
@@ -725,72 +737,119 @@ class _HomeContent extends StatelessWidget {
                                 fontSize: 16))
                       ]))
                 ]))),
-            Row(children: [
-              if (order.status != 'Selesai')
-                Expanded(
-                    child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          showDialog(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(20)),
-                                      title: const Text('Batalkan Pesanan?'),
-                                      content: const Text(
-                                          'Slot jam akan tersedia kembali.'),
-                                      actions: [
-                                        TextButton(
-                                            onPressed: () => Navigator.pop(ctx),
-                                            child: const Text('Tidak')),
-                                        TextButton(
-                                            onPressed: () {
-                                              Navigator.pop(ctx);
-                                              bookingService
-                                                  .cancelOrder(order.id);
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(const SnackBar(
-                                                      content: Text(
-                                                          'Pesanan dibatalkan'),
-                                                      backgroundColor:
-                                                          Colors.orange));
-                                            },
-                                            child: Text('Ya, Batalkan',
-                                                style: TextStyle(
-                                                    color: Colors.red.shade400,
-                                                    fontWeight:
-                                                        FontWeight.bold)))
-                                      ]));
-                        },
-                        style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16)),
-                            side: BorderSide(color: Colors.red.shade400)),
-                        child: Text('Batalkan',
-                            style: TextStyle(
-                                color: Colors.red.shade400,
-                                fontWeight: FontWeight.bold)))),
-              if (order.status != 'Selesai') const SizedBox(width: 12),
-              Expanded(
-                  child: ElevatedButton(
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                // Menunggu Pembayaran => tampil: Bayar + Batalkan
+                if (order.status == 'Menunggu Pembayaran')
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(minWidth: 140, maxWidth: 240),
+                    child: ElevatedButton(
                       onPressed: () {
+                        // TODO: implementasi redirect ke payment (invoice_url)
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: const Text('Membuka live tracking...'),
-                            backgroundColor: Color(AppConstants.primaryColor)));
                       },
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(AppConstants.primaryColor),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16))),
-                      child: const Text('Lacak Pesanan',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold)))),
-            ]),
+                        backgroundColor: Color(AppConstants.primaryColor),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        'Bayar Sekarang',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                if (order.status == 'Menunggu Pembayaran')
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(minWidth: 140, maxWidth: 240),
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            title: const Text('Batalkan Pesanan?'),
+                            content:
+                                const Text('Slot jam akan tersedia kembali.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: const Text('Tidak'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(ctx);
+                                  if (order.id.isEmpty) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Gagal membatalkan: ID pesanan kosong',
+                                          ),
+                                          backgroundColor: Colors.redAccent,
+                                        ),
+                                      );
+                                    }
+                                    return;
+                                  }
+                                  bookingService.cancelOrder(order.id);
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Pesanan dibatalkan'),
+                                      backgroundColor: Colors.orange,
+                                    ),
+                                  );
+                                },
+                                child: const Text(
+                                  'Ya, Batalkan',
+                                  style: TextStyle(
+                                    color: Colors.redAccent,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              )
+                            ],
+                          ),
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        side: BorderSide(color: Colors.red.shade400),
+                      ),
+                      child: Text(
+                        'Batalkan',
+                        style: TextStyle(
+                          color: Colors.red.shade400,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Diproses => tidak ada tombol
+                if (order.status == 'Diproses' || order.status == 'Menunggu Diproses')
+                  const SizedBox.shrink(),
+
+                // Selesai => tidak ada tombol
+                if (order.status == 'Selesai')
+                  const SizedBox.shrink(),
+              ],
+            ),
           ],
         ),
       ),
