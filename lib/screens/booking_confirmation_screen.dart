@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/booking_model.dart';
-import '../services/booking_service.dart';
+
 import '../utils/constants.dart';
+import '../services/xendit_service.dart';
+import '../services/booking_service.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 
 class BookingConfirmationScreen extends StatefulWidget {
   final BookingModel booking;
@@ -45,24 +49,103 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
     );
   }
 
+  int _getPriceForCategory(String category) {
+    switch (category) {
+      case 'Kamar Tidur':
+        return 50000;
+      case 'Kamar Mandi':
+        return 40000;
+      case 'Kamar Tidur + Kamar Mandi':
+        return 85000;
+      default:
+        return 50000;
+    }
+  }
+
   Future<void> _confirmBooking() async {
     setState(() => _isSaving = true);
 
-    final confirmedBooking = widget.booking.copyWith(category: _selectedCategory);
+    final price = _getPriceForCategory(_selectedCategory);
+
+    final bookingId = DateTime.now().microsecondsSinceEpoch.toString();
 
     try {
-      final result = await BookingService().saveBooking(confirmedBooking);
-      if (!mounted) return;
-      if (result != null) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pemesanan berhasil disimpan.')));
-        // Pop true agar BookingScreen meneruskan true ke JadwalScreen (Slot jadi Penuh)
-        Navigator.pop(context, true); 
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maaf, slot sudah penuh.')));
+      // 1) Buat doc PENDING dulu (agar tampil di dashboard & bisa dibatalkan)
+      //    Pastikan docId = bookingId == external_id invoice.
+      final pending = await BookingService().saveBooking(
+        widget.booking.copyWith(
+          id: bookingId,
+          category: _selectedCategory,
+          status: 'Menunggu Pembayaran',
+        ),
+      );
+
+      debugPrint('pendingSave bookingId=$bookingId scheduleKey=${widget.booking.scheduleKey} timeRange=${widget.booking.timeRange} pending=${pending?.id}');
+
+      if (pending == null) {
+        throw 'Slot tidak tersedia (save booking returned null).';
       }
-    } catch (e) {
+
+      // 2) Buat invoice via backend Xendit Anda
+      final invoiceUrl = await XenditService().createInvoice(
+        bookingId: bookingId,
+        amount: price,
+        email: widget.booking.userEmail ?? 'customer@email.com',
+        description: 'Pembayaran Jasa Pembersihan - $_selectedCategory',
+        customer: {
+          'given_names': 'Cleaning',
+          'surname': 'Customer',
+          'email': widget.booking.userEmail ?? 'customer@email.com',
+          'mobile_number': '+6287774441111',
+        },
+        items: [
+          {
+            'name': 'Cleaning Service ($_selectedCategory)',
+            'quantity': 1,
+            'price': price,
+            'category': 'Cleaning',
+          },
+        ],
+        successRedirectUrl: 'https://www.google.com',
+        failureRedirectUrl: 'https://www.google.com',
+        metadata: {
+          'booking_id': bookingId,
+          'booking': {
+            'category': _selectedCategory,
+            'buildingType': widget.booking.buildingType,
+            'buildingDetail': widget.booking.buildingDetail,
+            'floorDetail': widget.booking.floorDetail,
+            'roomDetail': widget.booking.roomDetail,
+            'date': widget.booking.date.toIso8601String(),
+            'timeRange': widget.booking.timeRange,
+            'userUid': widget.booking.userUid,
+            'userEmail': widget.booking.userEmail,
+          },
+        },
+      );
+
+      // 3) Redirect user ke halaman checkout Xendit
+      final uri = Uri.parse(invoiceUrl.trim());
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        throw 'Tidak dapat membuka halaman pembayaran (launchUrl gagal).';
+      }
+
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan pemesanan: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Silakan selesaikan pembayaran di halaman Xendit.')),
+      );
+      Navigator.pop(context, true);
+    } catch (e) {
+      // Jika invoice gagal, batalkan doc pending biar slot tidak terkunci.
+      try {
+        BookingService().cancelOrder(bookingId);
+      } catch (_) {}
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Terjadi kesalahan: $e')),
+      );
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }

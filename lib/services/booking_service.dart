@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/booking_model.dart';
 
@@ -9,6 +10,10 @@ class BookingService extends ChangeNotifier {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final List<BookingModel> _orders = [];
+
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _bookingSub;
+
+  bool _isListening = false;
 
   final Map<String, List<Map<String, dynamic>>> _baseScheduleData = {
     '2025-4-1': [
@@ -96,11 +101,81 @@ class BookingService extends ChangeNotifier {
     return match['isAvailable'] == true;
   }
 
+  void ensureListening(String userUid) {
+    if (_isListening) return;
+    _isListening = true;
+
+    // Prevent leaking wrong UID into query if uid is empty
+    if (userUid.isEmpty) return;
+
+    _bookingSub = _firestore
+        .collection('bookings')
+        .where('user_uid', isEqualTo: userUid)
+        .snapshots()
+        .listen((snapshot) {
+      final nextOrders = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return BookingModel(
+          id: doc.id,
+          category: (data['category'] ?? '') as String,
+          buildingType: (data['building_type'] ?? '') as String,
+          buildingDetail: (data['building_detail'] ?? '') as String,
+          floorDetail: (data['floor_detail'] ?? '') as String,
+          roomDetail: (data['room_detail'] ?? '') as String,
+          date: (data['date'] is String)
+              ? DateTime.parse(data['date'] as String)
+              : DateTime.now(),
+          timeRange: (data['time_range'] ?? '') as String,
+          userUid: data['user_uid'] as String?,
+          userEmail: data['user_email'] as String?,
+          createdAt: (data['created_at'] is String)
+              ? DateTime.parse(data['created_at'] as String)
+              : DateTime.now(),
+          status: (data['status'] ?? 'Diproses') as String,
+          petugasName: (data['petugas_name'] ?? 'Sari Dewi') as String,
+          petugasRating: (data['petugas_rating'] ?? 4.9) is num
+              ? (data['petugas_rating'] as num).toDouble()
+              : 4.9,
+        );
+      }).toList();
+
+      _orders
+        ..clear()
+        ..addAll(nextOrders);
+      notifyListeners();
+    });
+  }
+
+  @override
+  void dispose() {
+    _bookingSub?.cancel();
+    super.dispose();
+  }
+
   // Digunakan oleh BookingConfirmationScreen
   Future<BookingModel?> saveBooking(BookingModel order) async {
     if (!isSlotAvailable(order.scheduleKey, order.timeRange)) return null;
 
     try {
+      // Firestore tidak bisa menerima field bernilai null/undefined.
+      // Pastikan model export ke map sudah non-null untuk field wajib.
+      final normalizedOrder = order.copyWith(
+        category: order.category.isEmpty ? 'Cleaning' : order.category,
+      );
+
+      final hasCustomId = normalizedOrder.id.isNotEmpty;
+
+
+      if (hasCustomId) {
+        // Jika id sudah diberikan, pakai id itu sebagai docId.
+        await _firestore.collection('bookings').doc(order.id).set(normalizedOrder.toMap(), SetOptions(merge: true));
+        final savedOrder = order;
+        _orders.add(savedOrder);
+        notifyListeners();
+        return savedOrder;
+      }
+
+      // fallback: auto-id
       final docRef = await _firestore.collection('bookings').add(order.toMap());
       final savedOrder = order.copyWith(id: docRef.id);
       _orders.add(savedOrder);
@@ -114,7 +189,24 @@ class BookingService extends ChangeNotifier {
     }
   }
 
-  void cancelOrder(String orderId) => updateOrderStatus(orderId, 'Dibatalkan');
+  Future<void> cancelOrder(String orderId) async {
+    if (orderId.isEmpty) return;
+
+    try {
+      await _firestore.collection('bookings').doc(orderId).set(
+        {
+          'status': 'Dibatalkan',
+          'cancelled_at': DateTime.now().toIso8601String(),
+        },
+        SetOptions(merge: true),
+      );
+    } catch (e) {
+      debugPrint('Error cancelling order ($orderId): $e');
+      // tetap update lokal agar UI responsif
+    }
+
+    updateOrderStatus(orderId, 'Dibatalkan');
+  }
 
   void updateOrderStatus(String orderId, String newStatus) {
     final index = _orders.indexWhere((o) => o.id == orderId);
