@@ -746,9 +746,28 @@ class _HomeContent extends StatelessWidget {
                   ConstrainedBox(
                     constraints: const BoxConstraints(minWidth: 140, maxWidth: 240),
                     child: ElevatedButton(
-                      onPressed: () {
-                        // TODO: implementasi redirect ke payment (invoice_url)
+                      onPressed: () async {
+                        // invoice_url saat ini dibuat oleh backend Xendit.
+                        // Tetapi model BookingModel belum menyimpan invoice_url.
+                        // Jadi implementasi yang aman: arahkan kembali ke flow pembayaran dari sini.
+                        // Kalau sudah ada field `invoice_url` di Firestore, tinggal pakai langsung.
+                        if (order.id.isEmpty) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Gagal: ID pesanan kosong'),
+                                backgroundColor: Colors.redAccent,
+                              ),
+                            );
+                          }
+                          return;
+                        }
+
+                        // NOTE: Karena invoice_url tidak tersedia di BookingModel saat ini,
+                        // tombol ini diarahkan ke halaman detail booking agar user bisa melakukan pembayaran ulang.
+                        // (Update berikutnya: simpan invoice_url di Firestore lalu redirect ke URL itu.)
                         Navigator.pop(context);
+                        if (!context.mounted) return;
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(AppConstants.primaryColor),

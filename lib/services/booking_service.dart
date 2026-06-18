@@ -8,7 +8,8 @@ class BookingService extends ChangeNotifier {
   factory BookingService() => _instance;
   BookingService._internal();
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  // Lazy access so Firestore is resolved only after Firebase.initializeApp() runs.
+  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
   final List<BookingModel> _orders = [];
 
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _bookingSub;

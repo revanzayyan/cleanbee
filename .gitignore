@@ -33,6 +33,11 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Firebase Admin service account (DO NOT COMMIT)
+**/firebase-admin*.json
+**/*firebase-admin*.json
+**/cleanbee-firebase-admin.json
+
 # Symbolication related
 app.*.symbols
 

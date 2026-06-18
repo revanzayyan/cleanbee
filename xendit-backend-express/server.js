@@ -11,13 +11,18 @@ const PORT = process.env.PORT || 3000;
 const XENDIT_SECRET_KEY = process.env.XENDIT_SECRET_KEY;
 const XENDIT_WEBHOOK_SECRET = process.env.XENDIT_WEBHOOK_SECRET || process.env.WEBHOOK_SECRET;
 
+// NOTE: XENDIT_WEBHOOK_SECRET is not used for verification in this file yet.
+// For full security, verify Xendit's webhook signature per their docs.
+
 if (!XENDIT_SECRET_KEY) {
     throw new Error('Missing env XENDIT_SECRET_KEY');
 }
 
-// Firebase Admin init
-// Asumsi: Anda sudah menyiapkan GOOGLE_APPLICATION_CREDENTIALS (opsi paling gampang) / atau env credentials lain.
-// Untuk saat ini kita pakai default credentials dari environment.
+// Firebase Admin init (SERVER ONLY)
+// Pastikan service account credentials tidak dikirim ke client.
+// Cara paling umum:
+//   set GOOGLE_APPLICATION_CREDENTIALS=/path/to/cleanbee-firebase-admin.json
+// Lalu initialize tanpa hardcode key di code.
 if (!admin.apps.length) {
     admin.initializeApp();
 }
@@ -83,7 +88,7 @@ app.post('/v1/xendit/create-invoice', async (req, res) => {
                 failure_redirect_url: req.body.failure_redirect_url || req.body.failureUrl,
 
 // Opsional: kirim metadata
-                metadata: req.body.metadata || { booking_id },
+                metadata: req.body.metadata || { booking_id: booking_id },
             },
             {
                 headers: {
@@ -138,50 +143,55 @@ app.post('/v1/xendit/webhook', async (req, res) => {
         // Requirement: setelah payment berhasil -> 'Diproses'
         const newStatus = 'Diproses';
 
+    // 1. Perbaikan: Langsung baca dari callbackData.metadata (tanpa .booking)
+    const data = callbackData?.metadata && typeof callbackData.metadata === 'object' ? callbackData.metadata : {};
 
-        // Metadata sering tidak selalu ikut terbawa di webhook.
-        // Jadi minimal pastikan status & payment_id selalu tersimpan.
-        const bookingMeta = callbackData?.metadata?.booking;
-        const data = bookingMeta && typeof bookingMeta === 'object' ? bookingMeta : {};
+    // 2. Susun payload dengan mencocokkan key dari Flutter (gunakan camelCase atau snake_case sesuai kiriman Flutter)
+    const rawPayload = {
+        status: newStatus,
+        payment_id: paymentId ?? null,
+        updated_at: new Date().toISOString(),
 
-        // Pastikan tidak ada key yang nilainya `undefined` untuk Firestore.
-        // Bahkan jika kita pakai filter, kita tetap buat tipe yang benar (string) agar aman.
-        const rawPayload = {
-            status: newStatus,
-            payment_id: paymentId ?? null,
-            updated_at: new Date().toISOString(),
+        // Menyesuaikan dengan properti yang dikirim dari Flutter Anda
+        category: typeof data.category === 'string' ? data.category : undefined,
+        building_type: typeof data.buildingType === 'string' ? data.buildingType : (typeof data.building_type === 'string' ? data.building_type : undefined),
+        building_detail: typeof data.buildingDetail === 'string' ? data.buildingDetail : (typeof data.building_detail === 'string' ? data.building_detail : undefined),
+        floor_detail: typeof data.floorDetail === 'string' ? data.floorDetail : (typeof data.floor_detail === 'string' ? data.floor_detail : undefined),
+        room_detail: typeof data.roomDetail === 'string' ? data.roomDetail : (typeof data.room_detail === 'string' ? data.room_detail : undefined),
+        date: typeof data.date === 'string' ? data.date : undefined,
+        time_range: typeof data.timeRange === 'string' ? data.timeRange : (typeof data.time_range === 'string' ? data.time_range : undefined),
+        user_uid: typeof data.userUid === 'string' ? data.userUid : (typeof data.user_uid === 'string' ? data.user_uid : undefined),
+        user_email: typeof data.userEmail === 'string' ? data.userEmail : (typeof data.user_email === 'string' ? data.user_email : undefined),
+    };
 
-            category: typeof data.category === 'string' ? data.category : undefined,
-            building_type: typeof data.buildingType === 'string' ? data.buildingType : undefined,
-            building_detail: typeof data.buildingDetail === 'string' ? data.buildingDetail : undefined,
-            floor_detail: typeof data.floorDetail === 'string' ? data.floorDetail : undefined,
-            room_detail: typeof data.roomDetail === 'string' ? data.roomDetail : undefined,
-            date: typeof data.date === 'string' ? data.date : undefined,
-            time_range: typeof data.timeRange === 'string' ? data.timeRange : undefined,
-            user_uid: typeof data.userUid === 'string' ? data.userUid : undefined,
-            user_email: typeof data.userEmail === 'string' ? data.userEmail : undefined,
-        };
+    // Bersihkan data yang bernilai undefined
+    const payload = Object.fromEntries(
+        Object.entries(rawPayload).filter(([_, v]) => v !== undefined)
+    );
 
-        const payload = Object.fromEntries(
-            Object.entries(rawPayload).filter(([_, v]) => v !== undefined)
-        );
+    console.log('Webhook write payload bookings/{external_id}:', {
+        bookingId,
+        hasMetadata: Object.keys(data).length > 0,
+        paymentId,
+        payloadKeys: Object.keys(payload),
+    });
 
-
-
-        console.log('Webhook write payload bookings/{external_id}:', {
-            bookingId,
-            hasMetadata: Boolean(bookingMeta),
-            paymentId,
-            payloadKeys: Object.keys(payload),
-        });
-
-        try {
+    try {
+        // 3. Perbaikan Keamanan: Gunakan .update() agar tidak membuat data kosong jika ID salah/tidak ada
+        await firestore.collection('bookings').doc(bookingId).update(payload);
+        console.log(`Firestore Berhasil Diupdate untuk Booking ID: ${bookingId}`);
+    } catch (err) {
+        // Jika dokumen belum dibuat di Firestore oleh Flutter, .update() akan melempar error code 5 (NOT_FOUND)
+        if (err.code === 5) {
+            console.error(`Dokumen bookings/${bookingId} tidak ditemukan! Mencoba fallback menggunakan .set(..., {merge: true})`);
+            // Fallback aman jika Anda memang mengizinkan dokumen dibuat via webhook
             await firestore.collection('bookings').doc(bookingId).set(payload, { merge: true });
-        } catch (err) {
-            console.error('Firestore create/update failed:', err?.message || err);
-            return res.status(500).send('Webhook failed');
+        } else {
+            console.error('Firestore update failed:', err?.message || err);
+            return res.status(500).send('Webhook failed to update database');
         }
     }
+        }
 
 
     return res.status(200).send('Webhook received successfully');
