@@ -10,9 +10,12 @@ class BookingModel {
   final String? userUid;
   final String? userEmail;
   final DateTime createdAt;
+  // status: 'Diproses' | 'Menunggu Pembayaran' | 'menunggu_konfirmasi' | 'Selesai' | 'Dibatalkan'
   final String status;
   final String petugasName;
   final double petugasRating;
+  final String? beforePhotoUrl;
+  final String? afterPhotoUrl;
 
   BookingModel({
     this.id = '',
@@ -29,6 +32,8 @@ class BookingModel {
     this.status = 'Diproses',
     this.petugasName = 'Sari Dewi',
     this.petugasRating = 4.9,
+    this.beforePhotoUrl,
+    this.afterPhotoUrl,
   }) : createdAt = createdAt ?? DateTime.now();
 
   String get scheduleKey => '${date.year}-${date.month}-${date.day}';
@@ -52,10 +57,18 @@ class BookingModel {
       'status': status,
       'petugas_name': petugasName,
       'petugas_rating': petugasRating,
+      if (beforePhotoUrl != null) 'before_photo_url': beforePhotoUrl,
+      if (afterPhotoUrl != null) 'after_photo_url': afterPhotoUrl,
     };
   }
 
-  BookingModel copyWith({String? status, String? id, String? category}) {
+  BookingModel copyWith({
+    String? status,
+    String? id,
+    String? category,
+    String? beforePhotoUrl,
+    String? afterPhotoUrl,
+  }) {
     return BookingModel(
       id: id ?? this.id,
       category: category ?? this.category,
@@ -71,6 +84,8 @@ class BookingModel {
       status: status ?? this.status,
       petugasName: petugasName,
       petugasRating: petugasRating,
+      beforePhotoUrl: beforePhotoUrl ?? this.beforePhotoUrl,
+      afterPhotoUrl: afterPhotoUrl ?? this.afterPhotoUrl,
     );
   }
 }

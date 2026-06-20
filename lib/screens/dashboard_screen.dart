@@ -4,9 +4,12 @@ import '../utils/constants.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../services/auth_service.dart';
 import '../services/booking_service.dart';
+import '../services/review_service.dart';
 import '../models/booking_model.dart';
+import '../models/review_model.dart';
 import 'booking_screen.dart';
 import 'jadwal_screen.dart';
+import 'rating_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -42,8 +45,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       // ignore: invalid_use_of_visible_for_testing_member
       // Memanggil method internal untuk memulai snapshot listener.
       _bookingService.ensureListening(uid);
-
     }
+
+    // Mulai dengarkan ulasan dari Firestore
+    ReviewService().ensureListening();
   }
 
 
@@ -482,10 +487,17 @@ class _HomeContent extends StatelessWidget {
         statusColor = Colors.green;
         statusBgColor = Colors.green.withValues(alpha: 0.1);
         break;
+      case 'menunggu_konfirmasi':
+        statusColor = Colors.orange;
+        statusBgColor = Colors.orange.withValues(alpha: 0.1);
+        break;
       default:
         statusColor = Colors.orange;
         statusBgColor = Colors.orange.withValues(alpha: 0.1);
     }
+
+    final bool showSelesaiBtn = order.status == 'Diproses' ||
+        order.status == 'menunggu_konfirmasi';
 
     return GestureDetector(
       onTap: () => _showOrderDetail(context, order: order),
@@ -559,7 +571,10 @@ class _HomeContent extends StatelessWidget {
                       decoration: BoxDecoration(
                           color: statusBgColor,
                           borderRadius: BorderRadius.circular(8)),
-                      child: Text(order.status,
+                      child: Text(
+                          order.status == 'menunggu_konfirmasi'
+                              ? 'Tunggu Konfirmasi'
+                              : order.status,
                           style: TextStyle(
                               color: statusColor,
                               fontSize: 10,
@@ -586,11 +601,53 @@ class _HomeContent extends StatelessWidget {
                                   fontWeight: FontWeight.w600,
                                   color: Color(AppConstants.textDark))),
                         ]),
-                    Text('Klik untuk lihat detail',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Color(AppConstants.primaryColor),
-                            fontWeight: FontWeight.bold)),
+                    if (showSelesaiBtn)
+                      GestureDetector(
+                        onTap: () async {
+                          if (order.status == 'Diproses') {
+                            await bookingService.markOrderDone(order.id);
+                          }
+                          final updated = bookingService.orders.firstWhere(
+                              (o) => o.id == order.id,
+                              orElse: () => order);
+                          if (!context.mounted) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => RatingScreen(order: updated),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.green.withValues(alpha: 0.35),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: const Text(
+                            'Selesai',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      Text('Klik untuk lihat detail',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: Color(AppConstants.primaryColor),
+                              fontWeight: FontWeight.bold)),
                   ]),
             ],
           ),
@@ -958,6 +1015,9 @@ class _HomeContent extends StatelessWidget {
   }
 
   Widget _buildReviewSection(BuildContext context) {
+    final reviewService = ReviewService();
+    final reviews = reviewService.reviews;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
@@ -978,147 +1038,323 @@ class _HomeContent extends StatelessWidget {
                         color: Color(AppConstants.primaryColor)))),
           ]),
           const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-                color: Color(AppConstants.cardColor),
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 12,
-                      offset: const Offset(0, 2))
-                ]),
-            child: Column(
-              children: [
-                ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                        width: double.infinity,
-                        height: 140,
-                        color: Color(AppConstants.accentColor),
-                        child: Stack(alignment: Alignment.center, children: [
-                          Icon(Icons.photo_camera_outlined,
-                              size: 40,
-                              color: Color(AppConstants.primaryColor)
-                                  .withValues(alpha: 0.4)),
-                          Positioned(
-                              top: 10,
-                              right: 10,
-                              child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(20)),
-                                  child: const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.star_rounded,
-                                            color: Color(0xFFFFD700), size: 16),
-                                        SizedBox(width: 4),
-                                        Text('4.9',
-                                            style: TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w700,
-                                                color: Colors.black87))
-                                      ]))),
-                          Positioned(
-                              top: 10,
-                              left: 10,
-                              child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle),
-                                  child: const Icon(Icons.favorite,
-                                      color: Colors.red, size: 16)))
-                        ]))),
-                const SizedBox(height: 14),
-                Row(children: [
-                  Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(AppConstants.accentColor)),
-                      child: Icon(Icons.person,
-                          size: 18, color: Color(AppConstants.primaryColor))),
-                  const SizedBox(width: 10),
-                  Expanded(
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                        const Text('Revan Zayyan',
-                            style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Color(AppConstants.textDark))),
-                        const SizedBox(height: 2),
-                        Row(
-                            children: List.generate(
-                                5,
-                                (_) => const Icon(Icons.star_rounded,
-                                    size: 14, color: Color(0xFFFFD700))))
-                      ])),
-                  Text('2 hari lalu',
+          if (reviews.isNotEmpty)
+            ...reviews.take(3).map((r) => Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _buildReviewCard(context, review: r),
+                ))
+          else
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                  color: Color(AppConstants.cardColor),
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 12,
+                        offset: const Offset(0, 2))
+                  ]),
+              child: Column(
+                children: [
+                  ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                          width: double.infinity,
+                          height: 140,
+                          color: Color(AppConstants.accentColor),
+                          child: Stack(alignment: Alignment.center, children: [
+                            Icon(Icons.photo_camera_outlined,
+                                size: 40,
+                                color: Color(AppConstants.primaryColor)
+                                    .withValues(alpha: 0.4)),
+                            Positioned(
+                                top: 10,
+                                right: 10,
+                                child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(20)),
+                                    child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.star_rounded,
+                                              color: Color(0xFFFFD700), size: 16),
+                                          SizedBox(width: 4),
+                                          Text('4.9',
+                                              style: TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Colors.black87))
+                                        ]))),
+                            Positioned(
+                                top: 10,
+                                left: 10,
+                                child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle),
+                                    child: const Icon(Icons.favorite,
+                                        color: Colors.red, size: 16)))
+                          ]))),
+                  const SizedBox(height: 14),
+                  Row(children: [
+                    Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Color(AppConstants.accentColor)),
+                        child: Icon(Icons.person,
+                            size: 18, color: Color(AppConstants.primaryColor))),
+                    const SizedBox(width: 10),
+                    Expanded(
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                          const Text('Revan Zayyan',
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(AppConstants.textDark))),
+                          const SizedBox(height: 2),
+                          Row(
+                              children: List.generate(
+                                  5,
+                                  (_) => const Icon(Icons.star_rounded,
+                                      size: 14, color: Color(0xFFFFD700))))
+                        ])),
+                    Text('2 hari lalu',
+                        style: TextStyle(
+                            fontSize: 11, color: Color(AppConstants.textLight)))
+                  ]),
+                  const SizedBox(height: 10),
+                  const Text(
+                      'Kamarnya jadi bersih dan wangi! Petugasnya ramah dan hasilnya sangat memuaskan. Recommended banget!',
                       style: TextStyle(
-                          fontSize: 11, color: Color(AppConstants.textLight)))
-                ]),
-                const SizedBox(height: 10),
-                const Text(
-                    'Kamarnya jadi bersih dan wangi! Petugasnya ramah dan hasilnya sangat memuaskan. Recommended banget!',
-                    style: TextStyle(
-                        fontSize: 13,
-                        color: Color(AppConstants.textLight),
-                        height: 1.5)),
-                const SizedBox(height: 16),
-                Divider(color: Colors.grey.withValues(alpha: 0.2)),
-                const SizedBox(height: 8),
-                Row(children: [
-                  Expanded(
-                      child: TextField(
-                          decoration: InputDecoration(
-                              hintText: 'Balas ulasan...',
-                              hintStyle: const TextStyle(fontSize: 13),
-                              isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 10),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                  borderSide: BorderSide(
-                                      color:
-                                          Colors.grey.withValues(alpha: 0.3))),
-                              enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                  borderSide: BorderSide(
-                                      color: Colors.grey
-                                          .withValues(alpha: 0.3)))))),
-                  const SizedBox(width: 8),
-                  TextButton(
-                      onPressed: () => ScaffoldMessenger.of(context)
-                          .showSnackBar(const SnackBar(
-                              content: Text('Balasan terkirim'))),
-                      style: TextButton.styleFrom(
-                          foregroundColor: Color(AppConstants.primaryColor),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 10),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20)),
-                          backgroundColor: Color(AppConstants.primaryColor)
-                              .withValues(alpha: 0.1)),
-                      child: const Text('Kirim',
-                          style: TextStyle(fontWeight: FontWeight.bold)))
-                ]),
-              ],
+                          fontSize: 13,
+                          color: Color(AppConstants.textLight),
+                          height: 1.5)),
+                  const SizedBox(height: 16),
+                  Divider(color: Colors.grey.withValues(alpha: 0.2)),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Expanded(
+                        child: TextField(
+                            decoration: InputDecoration(
+                                hintText: 'Balas ulasan...',
+                                hintStyle: const TextStyle(fontSize: 13),
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                    borderSide: BorderSide(
+                                        color:
+                                            Colors.grey.withValues(alpha: 0.3))),
+                                enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                    borderSide: BorderSide(
+                                        color: Colors.grey
+                                            .withValues(alpha: 0.3)))))),
+                    const SizedBox(width: 8),
+                    TextButton(
+                        onPressed: () => ScaffoldMessenger.of(context)
+                            .showSnackBar(const SnackBar(
+                                content: Text('Balasan terkirim'))),
+                        style: TextButton.styleFrom(
+                            foregroundColor: Color(AppConstants.primaryColor),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 10),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20)),
+                            backgroundColor: Color(AppConstants.primaryColor)
+                                .withValues(alpha: 0.1)),
+                        child: const Text('Kirim',
+                            style: TextStyle(fontWeight: FontWeight.bold)))
+                  ]),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewCard(BuildContext context, {required ReviewModel review}) {
+    final TextEditingController replyCtrl = TextEditingController();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+          color: Color(AppConstants.cardColor),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 2))
+          ]),
+      child: Column(
+        children: [
+          // Foto after (atau placeholder)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: double.infinity,
+              height: 140,
+              color: Color(AppConstants.accentColor),
+              child: review.afterPhotoUrl != null
+                  ? Image.network(
+                      review.afterPhotoUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Center(
+                        child: Icon(Icons.photo_camera_outlined,
+                            size: 40,
+                            color: Color(AppConstants.primaryColor)
+                                .withValues(alpha: 0.4)),
+                      ),
+                    )
+                  : Stack(alignment: Alignment.center, children: [
+                      Icon(Icons.photo_camera_outlined,
+                          size: 40,
+                          color: Color(AppConstants.primaryColor)
+                              .withValues(alpha: 0.4)),
+                    ]),
             ),
           ),
+          // Rating badge overlay (top-right)
+          Transform.translate(
+            offset: const Offset(0, -8),
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2))
+                    ]),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.star_rounded,
+                      color: Color(0xFFFFD700), size: 16),
+                  const SizedBox(width: 4),
+                  Text('${review.rating}.0',
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87))
+                ]),
+              ),
+            ),
+          ),
+          // Avatar + nama + waktu
+          Row(children: [
+            Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(AppConstants.accentColor)),
+                child: Icon(Icons.person,
+                    size: 18, color: Color(AppConstants.primaryColor))),
+            const SizedBox(width: 10),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text(review.customerName,
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(AppConstants.textDark))),
+                  const SizedBox(height: 2),
+                  Row(
+                      children: List.generate(
+                          5,
+                          (i) => Icon(
+                              i < review.rating
+                                  ? Icons.star_rounded
+                                  : Icons.star_outline_rounded,
+                              size: 14,
+                              color: i < review.rating
+                                  ? const Color(0xFFFFD700)
+                                  : Colors.grey.withValues(alpha: 0.4))))
+                ])),
+            Text(review.relativeTime,
+                style: TextStyle(
+                    fontSize: 11, color: Color(AppConstants.textLight)))
+          ]),
+          if (review.comment != null && review.comment!.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(review.comment!,
+                  style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(AppConstants.textLight),
+                      height: 1.5)),
+            ),
+          ],
+          const SizedBox(height: 16),
+          Divider(color: Colors.grey.withValues(alpha: 0.2)),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+                child: TextField(
+                    controller: replyCtrl,
+                    decoration: InputDecoration(
+                        hintText: 'Balas ulasan...',
+                        hintStyle: const TextStyle(fontSize: 13),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide(
+                                color: Colors.grey.withValues(alpha: 0.3))),
+                        enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide(
+                                color:
+                                    Colors.grey.withValues(alpha: 0.3)))))),
+            const SizedBox(width: 8),
+            TextButton(
+                onPressed: () {
+                  if (replyCtrl.text.trim().isNotEmpty) {
+                    ReviewService()
+                        .replyToReview(review.id, replyCtrl.text.trim());
+                    replyCtrl.clear();
+                  }
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Balasan terkirim')));
+                },
+                style: TextButton.styleFrom(
+                    foregroundColor: Color(AppConstants.primaryColor),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                    backgroundColor: Color(AppConstants.primaryColor)
+                        .withValues(alpha: 0.1)),
+                child: const Text('Kirim',
+                    style: TextStyle(fontWeight: FontWeight.bold)))
+          ]),
         ],
       ),
     );
   }
 }
+
 
 // ✅ Placeholder classes for undefined screens
 class _SettingScreenPlaceholder extends StatelessWidget {
