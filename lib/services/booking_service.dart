@@ -112,7 +112,7 @@ class BookingService extends ChangeNotifier {
     if (userUid.isEmpty) return;
 
     _bookingSub = _firestore
-        .collection('bookings')
+        .collection('booking')
         .where('user_uid', isEqualTo: userUid)
         .snapshots()
         .listen((snapshot) {
@@ -173,7 +173,7 @@ class BookingService extends ChangeNotifier {
 
       if (hasCustomId) {
         // Jika id sudah diberikan, pakai id itu sebagai docId.
-        await _firestore.collection('bookings').doc(order.id).set(normalizedOrder.toMap(), SetOptions(merge: true));
+        await _firestore.collection('booking').doc(order.id).set(normalizedOrder.toMap(), SetOptions(merge: true));
         final savedOrder = order;
         _orders.add(savedOrder);
         notifyListeners();
@@ -181,7 +181,7 @@ class BookingService extends ChangeNotifier {
       }
 
       // fallback: auto-id
-      final docRef = await _firestore.collection('bookings').add(order.toMap());
+      final docRef = await _firestore.collection('booking').add(order.toMap());
       final savedOrder = order.copyWith(id: docRef.id);
       _orders.add(savedOrder);
       notifyListeners();
@@ -206,7 +206,7 @@ class BookingService extends ChangeNotifier {
 
   void syncUserBookings(String userId) {
     _bookingsSubscription?.cancel();
-    _bookingsSubscription = _firestore.collection('bookings')
+    _bookingsSubscription = _firestore.collection('booking')
         .where('user_uid', isEqualTo: userId)
         .snapshots()
         .listen((snapshot) {
@@ -225,7 +225,7 @@ class BookingService extends ChangeNotifier {
   }
 
   Stream<List<BookingModel>> getBookingsStream() {
-    return _firestore.collection('bookings')
+    return _firestore.collection('booking')
         .orderBy('created_at', descending: true)
         .snapshots()
         .map((snapshot) {
@@ -238,7 +238,7 @@ class BookingService extends ChangeNotifier {
   Future<void> cancelOrder(String orderId) async {
     if (orderId.isEmpty) return;
     try {
-      await _firestore.collection('bookings').doc(orderId).set(
+      await _firestore.collection('booking').doc(orderId).set(
         {
           'status': 'Dibatalkan',
           'cancelled_at': DateTime.now().toIso8601String(),
@@ -254,18 +254,22 @@ class BookingService extends ChangeNotifier {
   Future<void> updateOrderStatusInFirestore(String orderId, String newStatus) async {
     try {
       // Fetch booking details first to know who the user is
-      final docSnap = await _firestore.collection('bookings').doc(orderId).get();
+      final docSnap = await _firestore.collection('booking').doc(orderId).get();
       if (docSnap.exists) {
         final data = docSnap.data()!;
         final userUid = data['user_uid'] as String?;
         final category = data['category'] ?? 'Layanan Kebersihan';
         
-        await _firestore.collection('bookings').doc(orderId).update({'status': newStatus});
+        await _firestore.collection('booking').doc(orderId).update({'status': newStatus});
 
         // Update local status
         final index = _orders.indexWhere((o) => o.id == orderId);
         if (index != -1) {
-          _orders[index] = _orders[index].copyWith(status: newStatus);
+          _orders[index] = _orders[index].copyWith(
+            status: newStatus,
+            petugasName: data['petugas_name'] as String?,
+            petugasRating: (data['petugas_rating'] as num?)?.toDouble(),
+          );
           notifyListeners();
         }
 
@@ -277,6 +281,13 @@ class BookingService extends ChangeNotifier {
           if (newStatus == 'Diproses') {
             notifTitle = 'Pesanan Terkonfirmasi! 🎉';
             notifBody = 'Pesanan $category Anda telah diverifikasi oleh Admin. Petugas segera menuju lokasi.';
+          } else if (newStatus == 'Petugas Ditugaskan') {
+            final petugasName = data['petugas_name'] ?? 'Sari Dewi';
+            notifTitle = 'Petugas Ditugaskan! 🚗';
+            notifBody = 'Petugas $petugasName telah ditugaskan untuk layanan $category Anda.';
+          } else if (newStatus == 'menunggu_konfirmasi') {
+            notifTitle = 'Pekerjaan Selesai! ✨';
+            notifBody = 'Layanan $category telah selesai dikerjakan. Silakan berikan ulasan Anda.';
           } else if (newStatus == 'Dibatalkan') {
             notifTitle = 'Pesanan Dibatalkan/Ditolak ⚠️';
             notifBody = 'Pesanan $category Anda telah dibatalkan atau ditolak.';
@@ -301,11 +312,50 @@ class BookingService extends ChangeNotifier {
     updateOrderStatusInFirestore(orderId, newStatus);
   }
 
+  Future<void> assignPetugas(String orderId, String petugasName) async {
+    if (orderId.isEmpty) return;
+    try {
+      await _firestore.collection('booking').doc(orderId).update({
+        'status': 'Petugas Ditugaskan',
+        'petugas_name': petugasName,
+        'petugas_rating': 4.9,
+      });
+
+      // Update locally
+      final index = _orders.indexWhere((o) => o.id == orderId);
+      if (index != -1) {
+        _orders[index] = _orders[index].copyWith(
+          status: 'Petugas Ditugaskan',
+          petugasName: petugasName,
+          petugasRating: 4.9,
+        );
+        notifyListeners();
+      }
+
+      // Send notification
+      final docSnap = await _firestore.collection('booking').doc(orderId).get();
+      if (docSnap.exists) {
+        final data = docSnap.data()!;
+        final userUid = data['user_uid'] as String?;
+        final category = data['category'] ?? 'Layanan Kebersihan';
+        if (userUid != null) {
+          await NotificationServiceAngga().addNotification(
+            userId: userUid,
+            title: 'Petugas Ditugaskan! 🚗',
+            body: 'Petugas $petugasName telah ditugaskan untuk layanan $category Anda.',
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error assigning petugas: $e');
+    }
+  }
+
   /// Petugas selesai bekerja: ubah status ke 'menunggu_konfirmasi'
   Future<void> markOrderDone(String orderId) async {
     if (orderId.isEmpty) return;
     try {
-      await _firestore.collection('bookings').doc(orderId).set(
+      await _firestore.collection('booking').doc(orderId).set(
         {
           'status': 'menunggu_konfirmasi',
           'done_at': DateTime.now().toIso8601String(),
@@ -317,6 +367,21 @@ class BookingService extends ChangeNotifier {
         },
         SetOptions(merge: true),
       );
+
+      // Send notification
+      final docSnap = await _firestore.collection('booking').doc(orderId).get();
+      if (docSnap.exists) {
+        final data = docSnap.data()!;
+        final userUid = data['user_uid'] as String?;
+        final category = data['category'] ?? 'Layanan Kebersihan';
+        if (userUid != null) {
+          await NotificationServiceAngga().addNotification(
+            userId: userUid,
+            title: 'Pekerjaan Selesai! ✨',
+            body: 'Layanan $category telah selesai dikerjakan. Silakan berikan ulasan Anda.',
+          );
+        }
+      }
     } catch (e) {
       debugPrint('Error marking order done ($orderId): $e');
     }
@@ -337,7 +402,7 @@ class BookingService extends ChangeNotifier {
   Future<void> completeOrder(String orderId) async {
     if (orderId.isEmpty) return;
     try {
-      await _firestore.collection('bookings').doc(orderId).set(
+      await _firestore.collection('booking').doc(orderId).set(
         {
           'status': 'Selesai',
           'completed_at': DateTime.now().toIso8601String(),

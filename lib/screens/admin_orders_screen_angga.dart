@@ -15,7 +15,7 @@ class AdminOrdersScreenAngga extends StatelessWidget {
       backgroundColor: Color(AppConstants.backgroundColor),
       appBar: AppBar(
         title: const Text(
-          'Pesanan Masuk',
+          'Pesanan Kebersihan',
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
         backgroundColor: Color(AppConstants.primaryColor),
@@ -36,11 +36,9 @@ class AdminOrdersScreenAngga extends StatelessWidget {
           }
 
           final bookings = snapshot.data ?? [];
-          final pendingBookings = bookings
-              .where((b) => b.status == 'Menunggu Verifikasi')
-              .toList();
+          final activeBookings = bookings.where((b) => b.status != 'Dibatalkan').toList();
 
-          if (pendingBookings.isEmpty) {
+          if (activeBookings.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -59,19 +57,11 @@ class AdminOrdersScreenAngga extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'Semua pesanan terverifikasi',
+                    'Tidak Ada Pesanan',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Color(AppConstants.textDark),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Tidak ada antrean pesanan baru saat ini.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Color(AppConstants.textLight),
                     ),
                   ),
                 ],
@@ -81,10 +71,10 @@ class AdminOrdersScreenAngga extends StatelessWidget {
 
           return ListView.separated(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-            itemCount: pendingBookings.length,
+            itemCount: activeBookings.length,
             separatorBuilder: (_, __) => const SizedBox(height: 14),
             itemBuilder: (context, index) {
-              final booking = pendingBookings[index];
+              final booking = activeBookings[index];
               return _buildOrderCard(context, booking, bookingService);
             },
           );
@@ -166,21 +156,7 @@ class AdminOrdersScreenAngga extends StatelessWidget {
                         ),
                       ),
                       // Badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          'Pending',
-                          style: TextStyle(
-                            color: Colors.orange,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                      _buildStatusBadge(booking.status),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -221,46 +197,7 @@ class AdminOrdersScreenAngga extends StatelessWidget {
           ),
 
           // ── Action Buttons ──
-          Container(
-            padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-            decoration: BoxDecoration(
-              color: Color(AppConstants.backgroundColor),
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _handleReject(context, booking, bookingService),
-                    icon: const Icon(Icons.close_rounded, size: 16),
-                    label: const Text('Tolak', style: TextStyle(fontWeight: FontWeight.bold)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      side: BorderSide(color: Colors.red.withValues(alpha: 0.6)),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _handleVerify(context, booking, bookingService),
-                    icon: const Icon(Icons.check_rounded, size: 16),
-                    label: const Text('Verifikasi', style: TextStyle(fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          _buildCardActions(context, booking, bookingService),
         ],
       ),
     );
@@ -486,45 +423,7 @@ class AdminOrdersScreenAngga extends StatelessWidget {
               ),
             ),
             // Action buttons inside bottom sheet too
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () async {
-                      Navigator.pop(ctx);
-                      await _handleReject(context, booking, bookingService);
-                    },
-                    icon: const Icon(Icons.close_rounded, size: 16),
-                    label: const Text('Tolak', style: TextStyle(fontWeight: FontWeight.bold)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      side: const BorderSide(color: Colors.red),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      Navigator.pop(ctx);
-                      await _handleVerify(context, booking, bookingService);
-                    },
-                    icon: const Icon(Icons.check_rounded, size: 16),
-                    label: const Text('Verifikasi', style: TextStyle(fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            _buildModalActions(context, booking, bookingService, ctx),
           ],
         ),
       ),
@@ -558,5 +457,442 @@ class AdminOrdersScreenAngga extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  // ── Helper Widgets & Dialogs ──
+
+  Widget _buildStatusBadge(String status) {
+    Color color;
+    Color bgColor;
+    String label;
+
+    switch (status) {
+      case 'Menunggu Verifikasi':
+        color = Colors.orange;
+        bgColor = Colors.orange.withValues(alpha: 0.12);
+        label = 'Pending';
+        break;
+      case 'Diproses':
+        color = Colors.blue;
+        bgColor = Colors.blue.withValues(alpha: 0.12);
+        label = 'Terkonfirmasi';
+        break;
+      case 'Petugas Ditugaskan':
+        color = Colors.purple;
+        bgColor = Colors.purple.withValues(alpha: 0.12);
+        label = 'Dikerjakan';
+        break;
+      case 'menunggu_konfirmasi':
+        color = Colors.deepOrange;
+        bgColor = Colors.deepOrange.withValues(alpha: 0.12);
+        label = 'Tunggu Ulasan';
+        break;
+      case 'Selesai':
+        color = Colors.green;
+        bgColor = Colors.green.withValues(alpha: 0.12);
+        label = 'Selesai';
+        break;
+      case 'Dibatalkan':
+        color = Colors.red;
+        bgColor = Colors.red.withValues(alpha: 0.12);
+        label = 'Dibatalkan';
+        break;
+      default:
+        color = Colors.grey;
+        bgColor = Colors.grey.withValues(alpha: 0.12);
+        label = status;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardActions(
+    BuildContext context,
+    BookingModel booking,
+    BookingService bookingService,
+  ) {
+    if (booking.status == 'Menunggu Verifikasi') {
+      return Container(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+        decoration: BoxDecoration(
+          color: Color(AppConstants.backgroundColor),
+          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _handleReject(context, booking, bookingService),
+                icon: const Icon(Icons.close_rounded, size: 16),
+                label: const Text('Tolak', style: TextStyle(fontWeight: FontWeight.bold)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  side: BorderSide(color: Colors.red.withValues(alpha: 0.6)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              flex: 2,
+              child: ElevatedButton.icon(
+                onPressed: () => _handleVerify(context, booking, bookingService),
+                icon: const Icon(Icons.check_rounded, size: 16),
+                label: const Text('Verifikasi', style: TextStyle(fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else if (booking.status == 'Diproses') {
+      return Container(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+        decoration: BoxDecoration(
+          color: Color(AppConstants.backgroundColor),
+          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+        ),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => _showAssignPetugasDialog(context, booking, bookingService),
+            icon: const Icon(Icons.person_add_rounded, size: 16),
+            label: const Text('Tugaskan Petugas', style: TextStyle(fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ),
+      );
+    } else if (booking.status == 'Petugas Ditugaskan') {
+      return Container(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+        decoration: BoxDecoration(
+          color: Color(AppConstants.backgroundColor),
+          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+        ),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => _handleMarkDone(context, booking, bookingService),
+            icon: const Icon(Icons.check_circle_rounded, size: 16),
+            label: const Text('Pesanan Selesai', style: TextStyle(fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ),
+      );
+    } else {
+      return Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+        decoration: BoxDecoration(
+          color: Color(AppConstants.backgroundColor),
+          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              booking.status == 'Selesai' ? Icons.check_circle : Icons.hourglass_empty,
+              color: booking.status == 'Selesai' ? Colors.green : Colors.orange,
+              size: 16,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              booking.status == 'Selesai' ? 'Pesanan Selesai & Dinilai' : 'Menunggu Ulasan Pelanggan',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: booking.status == 'Selesai' ? Colors.green : Colors.orange,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Widget _buildModalActions(
+    BuildContext context,
+    BookingModel booking,
+    BookingService bookingService,
+    BuildContext dialogContext,
+  ) {
+    if (booking.status == 'Menunggu Verifikasi') {
+      return Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                Navigator.pop(dialogContext);
+                await _handleReject(context, booking, bookingService);
+              },
+              icon: const Icon(Icons.close_rounded, size: 16),
+              label: const Text('Tolak', style: TextStyle(fontWeight: FontWeight.bold)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                side: const BorderSide(color: Colors.red),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                Navigator.pop(dialogContext);
+                await _handleVerify(context, booking, bookingService);
+              },
+              icon: const Icon(Icons.check_rounded, size: 16),
+              label: const Text('Verifikasi', style: TextStyle(fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else if (booking.status == 'Diproses') {
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: () async {
+            Navigator.pop(dialogContext);
+            await _showAssignPetugasDialog(context, booking, bookingService);
+          },
+          icon: const Icon(Icons.person_add_rounded, size: 16),
+          label: const Text('Tugaskan Petugas', style: TextStyle(fontWeight: FontWeight.bold)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        ),
+      );
+    } else if (booking.status == 'Petugas Ditugaskan') {
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: () async {
+            Navigator.pop(dialogContext);
+            await _handleMarkDone(context, booking, bookingService);
+          },
+          icon: const Icon(Icons.check_circle_rounded, size: 16),
+          label: const Text('Pesanan Selesai', style: TextStyle(fontWeight: FontWeight.bold)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        ),
+      );
+    } else {
+      return SizedBox(
+        width: double.infinity,
+        child: TextButton.icon(
+          onPressed: () => Navigator.pop(dialogContext),
+          icon: Icon(
+            booking.status == 'Selesai' ? Icons.check_circle : Icons.hourglass_empty,
+            color: booking.status == 'Selesai' ? Colors.green : Colors.orange,
+          ),
+          label: Text(
+            booking.status == 'Selesai' ? 'Pesanan Selesai & Dinilai' : 'Menunggu Ulasan Pelanggan',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: booking.status == 'Selesai' ? Colors.green : Colors.orange,
+            ),
+          ),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            backgroundColor: (booking.status == 'Selesai' ? Colors.green : Colors.orange).withValues(alpha: 0.1),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _showAssignPetugasDialog(
+    BuildContext context,
+    BookingModel booking,
+    BookingService bookingService,
+  ) async {
+    final cleaners = ['Raska', 'Rajel', 'Sari Dewi', 'Dimas Pratama', 'Sinta'];
+    String selectedCleaner = cleaners[0];
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: const Text('Tugaskan Petugas', style: TextStyle(fontWeight: FontWeight.bold)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Pilih petugas yang akan dikirim untuk pesanan ini:'),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedCleaner,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.grey.withValues(alpha: 0.05),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
+                      ),
+                    ),
+                    items: cleaners.map((c) => DropdownMenuItem(
+                      value: c,
+                      child: Text(c, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    )).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setDialogState(() {
+                          selectedCleaner = val;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text('Batal', style: TextStyle(color: Color(AppConstants.textLight))),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(AppConstants.primaryColor),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Tugaskan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          }
+        );
+      }
+    );
+
+    if (confirmed == true) {
+      await bookingService.assignPetugas(booking.id, selectedCleaner);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Petugas $selectedCleaner berhasil ditugaskan!')),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleMarkDone(
+    BuildContext context,
+    BookingModel booking,
+    BookingService bookingService,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Pesanan Selesai?', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text(
+          'Konfirmasi bahwa petugas telah menyelesaikan pekerjaan ini. Status akan diubah ke menunggu ulasan pelanggan.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Batal', style: TextStyle(color: Color(AppConstants.textLight))),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Ya, Selesai', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await bookingService.markOrderDone(booking.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white, size: 18),
+                SizedBox(width: 8),
+                Expanded(child: Text('Pesanan ditandai selesai! Menunggu konfirmasi & ulasan dari pelanggan.')),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
+    }
   }
 }

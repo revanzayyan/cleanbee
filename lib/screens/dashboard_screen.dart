@@ -447,6 +447,10 @@ class _HomeContent extends StatelessWidget {
         statusColor = Color(AppConstants.primaryColor);
         statusBgColor = Color(AppConstants.primaryColor).withValues(alpha: 0.1);
         break;
+      case 'Petugas Ditugaskan':
+        statusColor = Colors.purple;
+        statusBgColor = Colors.purple.withValues(alpha: 0.1);
+        break;
       case 'Selesai':
         statusColor = Colors.green;
         statusBgColor = Colors.green.withValues(alpha: 0.1);
@@ -460,8 +464,7 @@ class _HomeContent extends StatelessWidget {
         statusBgColor = Colors.orange.withValues(alpha: 0.1);
     }
 
-    final bool showSelesaiBtn = order.status == 'Diproses' ||
-        order.status == 'menunggu_konfirmasi';
+    final bool showSelesaiBtn = order.status == 'menunggu_konfirmasi';
 
     return GestureDetector(
       onTap: () => _showOrderDetail(context, order: order),
@@ -567,18 +570,11 @@ class _HomeContent extends StatelessWidget {
                         ]),
                     if (showSelesaiBtn)
                       GestureDetector(
-                        onTap: () async {
-                          if (order.status == 'Diproses') {
-                            await bookingService.markOrderDone(order.id);
-                          }
-                          final updated = bookingService.orders.firstWhere(
-                              (o) => o.id == order.id,
-                              orElse: () => order);
-                          if (!context.mounted) return;
+                        onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => RatingScreen(order: updated),
+                              builder: (_) => RatingScreen(order: order),
                             ),
                           );
                         },
@@ -597,7 +593,7 @@ class _HomeContent extends StatelessWidget {
                             ],
                           ),
                           child: const Text(
-                            'Selesai',
+                            'Tulis Ulasan',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 13,

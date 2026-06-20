@@ -87,6 +87,8 @@ class BookingModel {
     String? category,
     String? beforePhotoUrl,
     String? afterPhotoUrl,
+    String? petugasName,
+    double? petugasRating,
   }) {
     return BookingModel(
       id: id ?? this.id,
@@ -101,8 +103,8 @@ class BookingModel {
       userEmail: userEmail,
       createdAt: createdAt,
       status: status ?? this.status,
-      petugasName: petugasName,
-      petugasRating: petugasRating,
+      petugasName: petugasName ?? this.petugasName,
+      petugasRating: petugasRating ?? this.petugasRating,
       beforePhotoUrl: beforePhotoUrl ?? this.beforePhotoUrl,
       afterPhotoUrl: afterPhotoUrl ?? this.afterPhotoUrl,
     );
