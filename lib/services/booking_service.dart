@@ -60,7 +60,9 @@ class BookingService extends ChangeNotifier {
 
   List<BookingModel> getActiveOrders() {
     return _orders
-        .where((o) => o.status != 'Selesai' && o.status != 'Dibatalkan')
+        .where((o) =>
+            o.status != 'Selesai' &&
+            o.status != 'Dibatalkan')
         .toList();
   }
 
@@ -136,6 +138,8 @@ class BookingService extends ChangeNotifier {
           petugasRating: (data['petugas_rating'] ?? 4.9) is num
               ? (data['petugas_rating'] as num).toDouble()
               : 4.9,
+          beforePhotoUrl: data['before_photo_url'] as String?,
+          afterPhotoUrl: data['after_photo_url'] as String?,
         );
       }).toList();
 
@@ -214,5 +218,54 @@ class BookingService extends ChangeNotifier {
       _orders[index] = _orders[index].copyWith(status: newStatus);
       notifyListeners();
     }
+  }
+
+  /// Petugas selesai bekerja: ubah status ke 'menunggu_konfirmasi'
+  Future<void> markOrderDone(String orderId) async {
+    if (orderId.isEmpty) return;
+    try {
+      await _firestore.collection('bookings').doc(orderId).set(
+        {
+          'status': 'menunggu_konfirmasi',
+          'done_at': DateTime.now().toIso8601String(),
+          // Demo: inject dummy before/after photo URLs
+          'before_photo_url':
+              'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800',
+          'after_photo_url':
+              'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800',
+        },
+        SetOptions(merge: true),
+      );
+    } catch (e) {
+      debugPrint('Error marking order done ($orderId): $e');
+    }
+    final index = _orders.indexWhere((o) => o.id == orderId);
+    if (index != -1) {
+      _orders[index] = _orders[index].copyWith(
+        status: 'menunggu_konfirmasi',
+        beforePhotoUrl:
+            'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800',
+        afterPhotoUrl:
+            'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800',
+      );
+      notifyListeners();
+    }
+  }
+
+  /// Pelanggan konfirmasi: ubah status ke 'Selesai'
+  Future<void> completeOrder(String orderId) async {
+    if (orderId.isEmpty) return;
+    try {
+      await _firestore.collection('bookings').doc(orderId).set(
+        {
+          'status': 'Selesai',
+          'completed_at': DateTime.now().toIso8601String(),
+        },
+        SetOptions(merge: true),
+      );
+    } catch (e) {
+      debugPrint('Error completing order ($orderId): $e');
+    }
+    updateOrderStatus(orderId, 'Selesai');
   }
 }
