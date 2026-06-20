@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/booking_model.dart';
+import 'chat_service.dart';
 import 'notification_service_angga.dart';
 
 class BookingService extends ChangeNotifier {
@@ -116,6 +117,7 @@ class BookingService extends ChangeNotifier {
         .where('user_uid', isEqualTo: userUid)
         .snapshots()
         .listen((snapshot) {
+      final oldOrdersById = {for (var o in _orders) o.id: o};
       final nextOrders = snapshot.docs.map((doc) {
         final data = doc.data();
         return BookingModel(
@@ -143,6 +145,15 @@ class BookingService extends ChangeNotifier {
           afterPhotoUrl: data['after_photo_url'] as String?,
         );
       }).toList();
+
+      for (var nextOrder in nextOrders) {
+        final oldOrder = oldOrdersById[nextOrder.id];
+        if (oldOrder != null && oldOrder.status != nextOrder.status) {
+          _handleStatusTransition(oldOrder, nextOrder);
+        } else if (oldOrder == null) {
+          _handleInitialStatusNotification(nextOrder);
+        }
+      }
 
       _orders
         ..clear()
@@ -309,7 +320,15 @@ class BookingService extends ChangeNotifier {
   }
 
   void updateOrderStatus(String orderId, String newStatus) {
+    final index = _orders.indexWhere((o) => o.id == orderId);
+    if (index != -1) {
+      final oldOrder = _orders[index];
+      final updatedOrder = oldOrder.copyWith(status: newStatus);
+      _orders[index] = updatedOrder;
+      _handleStatusTransition(oldOrder, updatedOrder);
+      notifyListeners();
     updateOrderStatusInFirestore(orderId, newStatus);
+   }
   }
 
   Future<void> assignPetugas(String orderId, String petugasName) async {
@@ -351,6 +370,51 @@ class BookingService extends ChangeNotifier {
     }
   }
 
+  void _handleStatusTransition(BookingModel oldOrder, BookingModel newOrder) {
+    if (oldOrder.status == newOrder.status) return;
+    final chatId = newOrder.id.isNotEmpty ? newOrder.id : 'cs_support';
+
+    if (newOrder.status == 'Diproses') {
+      ChatService().sendAdminMessage(
+        chatId,
+        'Pembayaran sudah selesai. Petugas sedang menuju lokasi Anda.',
+      );
+    }
+
+    if (newOrder.status == 'menunggu_konfirmasi') {
+      ChatService().sendAdminMessage(
+        chatId,
+        'Pekerjaan selesai. Silakan berikan rating untuk layanan kami.',
+      );
+    }
+
+    if (newOrder.status == 'Selesai') {
+      ChatService().sendAdminMessage(
+        chatId,
+        'Pesanan selesai. Terima kasih, silakan berikan rating dan ulasan.',
+      );
+    }
+  }
+
+  void _handleInitialStatusNotification(BookingModel order) {
+    final chatService = ChatService();
+    final existingMessages = chatService.getMessages(order.id);
+    if (existingMessages.isNotEmpty) return;
+
+    if (order.status == 'Diproses') {
+      chatService.sendAdminMessage(
+        order.id,
+        'Pembayaran sudah selesai. Petugas sedang menuju lokasi Anda.',
+      );
+    }
+    if (order.status == 'menunggu_konfirmasi') {
+      chatService.sendAdminMessage(
+        order.id,
+        'Pekerjaan selesai. Silakan berikan rating untuk layanan kami.',
+      );
+    }
+  }
+
   /// Petugas selesai bekerja: ubah status ke 'menunggu_konfirmasi'
   Future<void> markOrderDone(String orderId) async {
     if (orderId.isEmpty) return;
@@ -387,13 +451,16 @@ class BookingService extends ChangeNotifier {
     }
     final index = _orders.indexWhere((o) => o.id == orderId);
     if (index != -1) {
-      _orders[index] = _orders[index].copyWith(
+      final oldOrder = _orders[index];
+      final updatedOrder = oldOrder.copyWith(
         status: 'menunggu_konfirmasi',
         beforePhotoUrl:
             'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800',
         afterPhotoUrl:
             'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800',
       );
+      _orders[index] = updatedOrder;
+      _handleStatusTransition(oldOrder, updatedOrder);
       notifyListeners();
     }
   }

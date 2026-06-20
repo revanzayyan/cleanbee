@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import '../utils/constants.dart';
+import '../services/chat_service.dart' as chat_service;
 
 class ChatDetailScreen extends StatefulWidget {
+  final String chatId;
   final String name;
   final String? avatarUrl;
   final bool isOnline;
 
   const ChatDetailScreen({
     super.key,
+    required this.chatId,
     required this.name,
     this.avatarUrl,
     this.isOnline = false,
@@ -21,6 +24,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
+  final chat_service.ChatService _chatService = chat_service.ChatService();
 
   List<ChatMessage> _messages = [];
   bool _isTyping = false;
@@ -28,7 +32,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _loadDummyMessages();
+    _loadMessages();
+    _chatService.addListener(_onChatUpdates);
+    _chatService.listenToChat(widget.chatId);
     _focusNode.addListener(() {
       if (_focusNode.hasFocus) {
         _scrollToBottom();
@@ -36,35 +42,31 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     });
   }
 
-  void _loadDummyMessages() {
-    _messages = [
-      ChatMessage(
-        text: 'Halo kak, saya sudah di jalan menuju lokasi',
-        time: '09:30',
-        isFromMe: false,
-      ),
-      ChatMessage(
-        text: 'Menuju lokasi !',
-        time: '09:32',
-        isFromMe: false,
-      ),
-      ChatMessage(
-        text: 'Baik kak, ditunggu ya',
-        time: '09:35',
-        isFromMe: true,
-      ),
-      ChatMessage(
-        text: 'Sudah sampai depan rumah kak',
-        time: '09:50',
-        isFromMe: false,
-      ),
-      ChatMessage(
-        text: 'Silakan masuk kak',
-        time: '09:51',
-        isFromMe: true,
-      ),
-    ];
+  void _loadMessages() {
+    _messages = _chatService
+        .getMessages(widget.chatId)
+        .map((item) => ChatMessage(
+              text: item.text,
+              time: item.time,
+              isFromMe: item.sender != 'Admin',
+            ))
+        .toList();
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+  }
+
+  void _onChatUpdates() {
+    if (!mounted) return;
+    setState(() {
+      _messages = _chatService
+          .getMessages(widget.chatId)
+          .map((item) => ChatMessage(
+                text: item.text,
+                time: item.time,
+                isFromMe: item.sender != 'Admin',
+              ))
+          .toList();
+    });
+    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -83,46 +85,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
-    setState(() {
-      _messages.add(ChatMessage(
-        text: text,
-        time: _getCurrentTime(),
-        isFromMe: true,
-      ));
-    });
-
+    _chatService.sendUserMessage(widget.chatId, text);
     _messageController.clear();
     _focusNode.unfocus();
     _scrollToBottom();
-
-    _simulateReply();
-  }
-
-  void _simulateReply() {
-    setState(() => _isTyping = true);
-    _scrollToBottom();
-
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      setState(() {
-        _isTyping = false;
-        _messages.add(ChatMessage(
-          text: 'Baik kak, siap 👍',
-          time: _getCurrentTime(),
-          isFromMe: false,
-        ));
-      });
-      _scrollToBottom();
-    });
-  }
-
-  String _getCurrentTime() {
-    final now = DateTime.now();
-    return '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
   }
 
   @override
   void dispose() {
+    _chatService.removeListener(_onChatUpdates);
     _messageController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();

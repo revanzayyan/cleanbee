@@ -9,6 +9,7 @@ import '../models/booking_model.dart';
 import '../services/notification_service_angga.dart';
 import '../models/review_model.dart';
 import 'booking_screen.dart';
+import 'chat_detail_screen.dart';
 import 'chat_screen.dart';
 import 'jadwal_screen.dart';
 import 'notification_screen_angga.dart';
@@ -714,9 +715,11 @@ class _HomeContent extends StatelessWidget {
                                   context,
                                   MaterialPageRoute(
                                       builder: (context) =>
-                                          _ChatDetailPlaceholder(
-                                              name: order.petugasName,
-                                              isOnline: true)));
+                                          ChatDetailScreen(
+                                            chatId: order.id,
+                                            name: order.petugasName,
+                                            isOnline: true,
+                                          )));
                             }),
                         IconButton(
                             icon: const Icon(Icons.call_rounded,
@@ -936,8 +939,11 @@ class _HomeContent extends StatelessWidget {
           Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (context) => const _ChatDetailPlaceholder(
-                      name: 'Customer Service', isOnline: true)));
+                  builder: (context) => ChatDetailScreen(
+                        chatId: 'cs_support',
+                        name: 'Customer Service',
+                        isOnline: true,
+                      )));
         }
       },
       child: Container(

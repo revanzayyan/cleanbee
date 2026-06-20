@@ -117,6 +117,7 @@ class ChatScreen extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (_) => ChatDetailScreen(
+              chatId: chat.name.toLowerCase().replaceAll(' ', '_'),
               name: chat.name,
               avatarUrl: chat.avatarUrl,
               isOnline: chat.isOnline,
