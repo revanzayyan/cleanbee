@@ -9,6 +9,7 @@ import '../models/booking_model.dart';
 import '../services/notification_service_angga.dart';
 import '../models/review_model.dart';
 import 'booking_screen.dart';
+import 'chat_screen.dart';
 import 'jadwal_screen.dart';
 import 'notification_screen_angga.dart';
 import 'rating_screen.dart';
@@ -153,7 +154,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         },
       ),
-      ),
     );
   }
 
@@ -174,47 +174,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 }
-
-class _PlaceholderScreen extends StatelessWidget {
-  final String title;
-  final VoidCallback onBack;
-  const _PlaceholderScreen({required this.title, required this.onBack});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        leading:
-            IconButton(icon: const Icon(Icons.arrow_back), onPressed: onBack),
-      ),
-      body: Center(
-          child: Text('Halaman $title',
-              style: const TextStyle(fontSize: 18, color: Colors.grey))),
-    );
-  }
-}
-
-// ✅ Placeholder for ChatScreen
-class _ChatScreenPlaceholder extends StatelessWidget {
-  final VoidCallback onBack;
-  const _ChatScreenPlaceholder({required this.onBack});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Chat'),
-        leading:
-            IconButton(icon: const Icon(Icons.arrow_back), onPressed: onBack),
-      ),
-      body: const Center(
-          child: Text('Halaman Chat',
-              style: TextStyle(fontSize: 18, color: Colors.grey))),
-    );
-  }
-}
-
 // ---------------------------------------------------------
 // HOME CONTENT
 // ---------------------------------------------------------
