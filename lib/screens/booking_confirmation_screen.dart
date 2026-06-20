@@ -137,15 +137,20 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
       );
       Navigator.pop(context, true);
     } catch (e) {
-      // Jika invoice gagal, batalkan doc pending biar slot tidak terkunci.
+      // Jika invoice gagal (misal server backend Xendit mati), alihkan status pesanan ke
+      // 'Menunggu Verifikasi' agar tetap masuk ke dashboard admin untuk verifikasi manual.
       try {
-        BookingService().cancelOrder(bookingId);
+        await BookingService().updateOrderStatusInFirestore(bookingId, 'Menunggu Verifikasi');
       } catch (_) {}
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Terjadi kesalahan: $e')),
+        SnackBar(
+          content: Text('Pembayaran offline: dialihkan ke verifikasi manual ($e)'),
+          backgroundColor: Colors.orange,
+        ),
       );
+      Navigator.pop(context, true);
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }

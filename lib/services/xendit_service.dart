@@ -1,12 +1,18 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
 class XenditService {
   /// Base URL backend Express Anda.
   /// Pastikan endpoint ini bisa diakses dari device/emulator.
   /// - Android emulator: gunakan http://10.0.2.2:3000
   /// - Real device: gunakan IP komputer/server atau domain publik.
-  static const String backendBaseUrl = 'http://10.0.2.2:3000';
+  static String get backendBaseUrl {
+    if (kIsWeb) {
+      return 'http://localhost:3000';
+    }
+    return 'http://10.0.2.2:3000';
+  }
 
   static const String createInvoicePath = '/v1/xendit/create-invoice';
 
