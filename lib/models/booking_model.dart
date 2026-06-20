@@ -29,7 +29,7 @@ class BookingModel {
     this.userUid,
     this.userEmail,
     DateTime? createdAt,
-    this.status = 'Diproses',
+    this.status = 'Menunggu Verifikasi',
     this.petugasName = 'Sari Dewi',
     this.petugasRating = 4.9,
     this.beforePhotoUrl,
@@ -41,6 +41,25 @@ class BookingModel {
       '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   String get fullAddress =>
       '$buildingType, $buildingDetail, Lantai $floorDetail, Kamar $roomDetail';
+
+  factory BookingModel.fromMap(Map<String, dynamic> map, String docId) {
+    return BookingModel(
+      id: docId,
+      category: map['category'] ?? '',
+      buildingType: map['building_type'] ?? '',
+      buildingDetail: map['building_detail'] ?? '',
+      floorDetail: map['floor_detail'] ?? '',
+      roomDetail: map['room_detail'] ?? '',
+      date: map['date'] != null ? DateTime.parse(map['date']) : DateTime.now(),
+      timeRange: map['time_range'] ?? '',
+      userUid: map['user_uid'],
+      userEmail: map['user_email'],
+      createdAt: map['created_at'] != null ? DateTime.parse(map['created_at']) : DateTime.now(),
+      status: map['status'] ?? 'Menunggu Verifikasi',
+      petugasName: map['petugas_name'] ?? 'Sari Dewi',
+      petugasRating: (map['petugas_rating'] ?? 4.9).toDouble(),
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -68,6 +87,8 @@ class BookingModel {
     String? category,
     String? beforePhotoUrl,
     String? afterPhotoUrl,
+    String? petugasName,
+    double? petugasRating,
   }) {
     return BookingModel(
       id: id ?? this.id,
@@ -82,8 +103,8 @@ class BookingModel {
       userEmail: userEmail,
       createdAt: createdAt,
       status: status ?? this.status,
-      petugasName: petugasName,
-      petugasRating: petugasRating,
+      petugasName: petugasName ?? this.petugasName,
+      petugasRating: petugasRating ?? this.petugasRating,
       beforePhotoUrl: beforePhotoUrl ?? this.beforePhotoUrl,
       afterPhotoUrl: afterPhotoUrl ?? this.afterPhotoUrl,
     );

@@ -6,10 +6,13 @@ import '../services/auth_service.dart';
 import '../services/booking_service.dart';
 import '../services/review_service.dart';
 import '../models/booking_model.dart';
+import '../services/notification_service_angga.dart';
 import '../models/review_model.dart';
 import 'booking_screen.dart';
 import 'chat_detail_screen.dart';
+import 'chat_screen.dart';
 import 'jadwal_screen.dart';
+import 'notification_screen_angga.dart';
 import 'rating_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -23,8 +26,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _bottomNavIndex = 0;
   final BookingService _bookingService = BookingService();
 
-  bool get _hasActiveOrder => _bookingService.getActiveOrders().isNotEmpty;
-
   void _goHome() {
     setState(() => _bottomNavIndex = 0);
   }
@@ -37,15 +38,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _bookingService.addListener(_onBookingChanged);
-
-    // Pastikan service membaca Firestore, supaya status dari webhook (Diproses) muncul di UI.
-    final user = AuthService().currentUser;
-    final uid = user?.uid;
-    if (uid != null && uid.isNotEmpty) {
-      // ignore: invalid_use_of_private_member
-      // ignore: invalid_use_of_visible_for_testing_member
-      // Memanggil method internal untuk memulai snapshot listener.
-      _bookingService.ensureListening(uid);
+    // Sync current user bookings from Firestore in real-time
+    final currentUser = AuthService().currentUser;
+    if (currentUser != null) {
+      _bookingService.syncUserBookings(currentUser.uid);
     }
 
     // Mulai dengarkan ulasan dari Firestore
@@ -56,6 +52,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void dispose() {
     _bookingService.removeListener(_onBookingChanged);
+    _bookingService.disposeSync();
     super.dispose();
   }
 
@@ -65,6 +62,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userId = AuthService().currentUser?.uid ?? '';
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: PopScope(
@@ -75,80 +74,86 @@ class _DashboardScreenState extends State<DashboardScreen> {
         },
         child: _getCurrentScreen(),
       ),
-      bottomNavigationBar: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          CustomBottomNav(
-            currentIndex: _bottomNavIndex,
-            hasUnverifiedOrders: _hasActiveOrder,
-            onTap: (index) {
-              if (index == 2) return;
-              setState(() => _bottomNavIndex = index);
-            },
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 22,
-            child: Center(
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const BookingScreen()),
-                  );
+      bottomNavigationBar: StreamBuilder<int>(
+        stream: NotificationServiceAngga().getUnreadCountStream(userId),
+        builder: (context, snapshot) {
+          final unreadCount = snapshot.data ?? 0;
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              CustomBottomNav(
+                currentIndex: _bottomNavIndex,
+                hasUnverifiedOrders: unreadCount > 0,
+                onTap: (index) {
+                  if (index == 2) return;
+                  setState(() => _bottomNavIndex = index);
                 },
-                child: Container(
-                  height: 56,
-                  width: 56,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFF1A3A6B),
-                        Color(0xFF2E6DB4),
-                        Color(0xFF5BA3E6)
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF1A3A6B).withValues(alpha: 0.35),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Stack(
-                    children: [
-                      const Center(
-                          child: Icon(Icons.add_rounded,
-                              color: Colors.white, size: 30)),
-                      Positioned(
-                        right: 4,
-                        top: 4,
-                        child: Container(
-                          height: 18,
-                          width: 18,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4ADE80),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 1.5),
-                          ),
-                          child: const Center(
-                              child: Icon(Icons.arrow_upward_rounded,
-                                  color: Colors.white, size: 11)),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 22,
+                child: Center(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const BookingScreen()),
+                      );
+                    },
+                    child: Container(
+                      height: 56,
+                      width: 56,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFF1A3A6B),
+                            Color(0xFF2E6DB4),
+                            Color(0xFF5BA3E6)
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF1A3A6B).withValues(alpha: 0.35),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                    ],
+                      child: Stack(
+                        children: [
+                          const Center(
+                              child: Icon(Icons.add_rounded,
+                                  color: Colors.white, size: 30)),
+                          Positioned(
+                            right: 4,
+                            top: 4,
+                            child: Container(
+                              height: 18,
+                              width: 18,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF4ADE80),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 1.5),
+                              ),
+                              child: const Center(
+                                  child: Icon(Icons.arrow_upward_rounded,
+                                      color: Colors.white, size: 11)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
@@ -161,56 +166,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 1:
         return JadwalScreen(onBack: _goHome);
       case 3:
-        return _PlaceholderScreen(title: 'Notifikasi', onBack: _goHome);
+        return NotificationScreenAngga(onBack: _goHome);
       case 4:
-        return _ChatScreenPlaceholder(onBack: _goHome);
+        return ChatScreen(onBack: _goHome);
       default:
         return _HomeContent(
             bookingService: _bookingService, onGoToJadwal: _goToJadwal);
     }
   }
 }
-
-class _PlaceholderScreen extends StatelessWidget {
-  final String title;
-  final VoidCallback onBack;
-  const _PlaceholderScreen({required this.title, required this.onBack});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        leading:
-            IconButton(icon: const Icon(Icons.arrow_back), onPressed: onBack),
-      ),
-      body: Center(
-          child: Text('Halaman $title',
-              style: const TextStyle(fontSize: 18, color: Colors.grey))),
-    );
-  }
-}
-
-// ✅ Placeholder for ChatScreen
-class _ChatScreenPlaceholder extends StatelessWidget {
-  final VoidCallback onBack;
-  const _ChatScreenPlaceholder({required this.onBack});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Chat'),
-        leading:
-            IconButton(icon: const Icon(Icons.arrow_back), onPressed: onBack),
-      ),
-      body: const Center(
-          child: Text('Halaman Chat',
-              style: TextStyle(fontSize: 18, color: Colors.grey))),
-    );
-  }
-}
-
 // ---------------------------------------------------------
 // HOME CONTENT
 // ---------------------------------------------------------
@@ -484,6 +448,10 @@ class _HomeContent extends StatelessWidget {
         statusColor = Color(AppConstants.primaryColor);
         statusBgColor = Color(AppConstants.primaryColor).withValues(alpha: 0.1);
         break;
+      case 'Petugas Ditugaskan':
+        statusColor = Colors.purple;
+        statusBgColor = Colors.purple.withValues(alpha: 0.1);
+        break;
       case 'Selesai':
         statusColor = Colors.green;
         statusBgColor = Colors.green.withValues(alpha: 0.1);
@@ -497,8 +465,7 @@ class _HomeContent extends StatelessWidget {
         statusBgColor = Colors.orange.withValues(alpha: 0.1);
     }
 
-    final bool showSelesaiBtn = order.status == 'Diproses' ||
-        order.status == 'menunggu_konfirmasi';
+    final bool showSelesaiBtn = order.status == 'menunggu_konfirmasi';
 
     return GestureDetector(
       onTap: () => _showOrderDetail(context, order: order),
@@ -604,18 +571,11 @@ class _HomeContent extends StatelessWidget {
                         ]),
                     if (showSelesaiBtn)
                       GestureDetector(
-                        onTap: () async {
-                          if (order.status == 'Diproses') {
-                            await bookingService.markOrderDone(order.id);
-                          }
-                          final updated = bookingService.orders.firstWhere(
-                              (o) => o.id == order.id,
-                              orElse: () => order);
-                          if (!context.mounted) return;
+                        onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => RatingScreen(order: updated),
+                              builder: (_) => RatingScreen(order: order),
                             ),
                           );
                         },
@@ -634,7 +594,7 @@ class _HomeContent extends StatelessWidget {
                             ],
                           ),
                           child: const Text(
-                            'Selesai',
+                            'Tulis Ulasan',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 13,

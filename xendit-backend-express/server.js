@@ -168,7 +168,7 @@ app.post('/v1/xendit/webhook', async (req, res) => {
 
 
 
-        console.log('Webhook write payload bookings/{external_id}:', {
+        console.log('Webhook write payload booking/{external_id}:', {
             bookingId,
             hasMetadata: Boolean(bookingMeta),
             paymentId,
@@ -176,7 +176,7 @@ app.post('/v1/xendit/webhook', async (req, res) => {
         });
 
         try {
-            await firestore.collection('bookings').doc(bookingId).set(payload, { merge: true });
+            await firestore.collection('booking').doc(bookingId).set(payload, { merge: true });
         } catch (err) {
             console.error('Firestore create/update failed:', err?.message || err);
             return res.status(500).send('Webhook failed');
