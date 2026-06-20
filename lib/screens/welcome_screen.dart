@@ -10,7 +10,7 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(AppConstants.backgroundColor),
+      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -20,94 +20,16 @@ class WelcomeScreen extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 // ── Ilustrasi dengan background biru muda ──
-                Container(
+                SizedBox(
                   height: 290,
                   width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Color(AppConstants.accentColor), // Biru sangat muda
-                    borderRadius: BorderRadius.circular(24),
-                  ),
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Lingkaran dekoratif atas kanan
-                      Positioned(
-                        top: -30,
-                        right: -20,
-                        child: Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Color(AppConstants.primaryLight)
-                                .withValues(alpha: 0.4),
-                          ),
-                        ),
-                      ),
-                      // Lingkaran dekoratif bawah kiri
-                      Positioned(
-                        bottom: -20,
-                        left: -10,
-                        child: Container(
-                          width: 90,
-                          height: 90,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Color(AppConstants.primaryLight)
-                                .withValues(alpha: 0.3),
-                          ),
-                        ),
-                      ),
-                      // Lingkaran dekoratif kecil
-                      Positioned(
-                        top: 20,
-                        left: 20,
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Color(AppConstants.primaryLight)
-                                .withValues(alpha: 0.3),
-                          ),
-                        ),
-                      ),
-
-                      // ── GANTI dengan ilustrasi asli ──
-                      // Image.asset(
-                      //   'assets/images/welcome_illustration.png',
-                      //   height: 240,
-                      //   fit: BoxFit.contain,
-                      // ),
-
-                      // Placeholder sementara
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 140,
-                            height: 140,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Color(AppConstants.primaryColor)
-                                  .withValues(alpha: 0.15),
-                            ),
-                            child: Icon(
-                              Icons.cleaning_services_rounded,
-                              size: 70,
-                              color: Color(AppConstants.primaryColor)
-                                  .withValues(alpha: 0.6),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Tambahkan ilustrasi',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Color(AppConstants.textLight),
-                            ),
-                          ),
-                        ],
+                      Image.asset(
+                        'lib/assets/images/welcome.png',
+                        height: 290,
+                        fit: BoxFit.contain,
                       ),
                     ],
                   ),

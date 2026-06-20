@@ -132,70 +132,106 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ↓ Diubah menjadi Colors.white agar sama seperti ChatScreen
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Color(AppConstants.primaryColor),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.2),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.4),
-                  width: 1.5,
-                ),
-              ),
-              child: const Icon(Icons.person, size: 20, color: Colors.white),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Text(
-                    widget.isOnline ? 'Online' : 'Offline',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.white.withValues(alpha: 0.75),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.call_outlined, size: 22),
-            onPressed: () {},
-            color: Colors.white,
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(MediaQuery.of(context).padding.top + 62),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.fromLTRB(
+            28,
+            MediaQuery.of(context).padding.top + 4,
+            28,
+            16,
           ),
-          const SizedBox(width: 4),
-        ],
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF0284C7),
+                Color(0xFF38BDF8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(28),
+              bottomRight: Radius.circular(28),
+            ),
+          ),
+          child: SafeArea(
+            top: false,
+            bottom: false,
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.15),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.2),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.4),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: const Icon(Icons.person, size: 20, color: Colors.white),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        widget.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Text(
+                        widget.isOnline ? 'Online' : 'Offline',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.white.withValues(alpha: 0.75),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.call_outlined, size: 22),
+                  onPressed: () {},
+                  color: Colors.white,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
       body: Column(
         children: [
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 12),
-            color: Color(AppConstants.primaryColor).withValues(alpha: 0.05),
+            color: const Color(0xFFF8FAFC),
             child: Center(
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -214,7 +250,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               ),
             ),
           ),
-
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -228,7 +263,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               },
             ),
           ),
-
           _buildInputArea(),
         ],
       ),
@@ -244,22 +278,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (!isMe) ...[
-            Container(
-              width: 28,
-              height: 28,
-              margin: const EdgeInsets.only(right: 8, bottom: 2),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(AppConstants.accentColor),
-              ),
-              child: Icon(
-                Icons.person,
-                size: 16,
-                color: Color(AppConstants.primaryColor),
-              ),
-            ),
-          ],
+          if (isMe) const SizedBox(width: 48),
+          if (!isMe) const SizedBox(width: 4),
           Flexible(
             child: Container(
               constraints: BoxConstraints(
@@ -267,9 +287,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
+                // ✅ Diubah: Warna bubble masuk jadi putih
                 color: isMe
                     ? Color(AppConstants.primaryColor)
-                    : Color(AppConstants.cardColor),
+                    : Colors.white,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(18),
                   topRight: const Radius.circular(18),
@@ -306,8 +327,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
                           color: isMe
-                              ? Colors.white.withValues(alpha: 0.7)
-                              : Color(AppConstants.textLight).withValues(alpha: 0.6),
+                              ? Colors.white.withValues(alpha: 0.75)
+                              : Color(AppConstants.textDark).withValues(alpha: 0.6),
                         ),
                       ),
                       if (isMe) ...[
@@ -324,7 +345,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               ),
             ),
           ),
-          if (isMe) const SizedBox(width: 36),
+          if (!isMe) const SizedBox(width: 8),
+          if (isMe) const SizedBox(width: 8),
         ],
       ),
     );
@@ -337,24 +359,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Container(
-            width: 28,
-            height: 28,
-            margin: const EdgeInsets.only(right: 8, bottom: 2),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Color(AppConstants.accentColor),
-            ),
-            child: Icon(
-              Icons.person,
-              size: 16,
-              color: Color(AppConstants.primaryColor),
-            ),
-          ),
+          const SizedBox(width: 4),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             decoration: BoxDecoration(
-              color: Color(AppConstants.cardColor),
+              // ✅ Diubah: Warna bubble typing jadi putih agar senada
+              color: Colors.white,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(18),
                 topRight: Radius.circular(18),
@@ -380,6 +390,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               ],
             ),
           ),
+          const SizedBox(width: 8),
         ],
       ),
     );
@@ -406,7 +417,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
       decoration: BoxDecoration(
-        color: Colors.white, // Diperbarui jadi putih agar selaras dengan body
+        color: Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -439,9 +450,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
                 decoration: BoxDecoration(
-                  color: Color(AppConstants.backgroundColor),
+                  color: Colors.transparent,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
                     color: Color(AppConstants.inputBorder).withValues(alpha: 0.6),
@@ -456,13 +467,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     color: Color(AppConstants.textDark),
                   ),
                   decoration: const InputDecoration(
-                    hintText: 'Tulis pesan...',
+                    hintText: 'Ketik pesan',
                     hintStyle: TextStyle(
                       fontSize: 14,
                       color: Color(AppConstants.textLight),
                     ),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(vertical: 12),
+                    contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   ),
                   onSubmitted: (_) => _sendMessage(),
                 ),

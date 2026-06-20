@@ -28,7 +28,7 @@ class SettingScreen extends StatelessWidget {
     return '-';
   }
 
-  Future<void>_handleLogout(BuildContext context) async {
+  Future<void> _handleLogout(BuildContext context) async {
     Navigator.pop(context);
 
     try {
@@ -221,85 +221,124 @@ class SettingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(AppConstants.backgroundColor),
-      appBar: AppBar(
-        backgroundColor: Color(AppConstants.primaryColor),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-          onPressed: () => Navigator.pop(context),
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: PreferredSize(
+        preferredSize:
+            Size.fromHeight(MediaQuery.of(context).padding.top + 120),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.fromLTRB(
+            28,
+            MediaQuery.of(context).padding.top + 4,
+            28,
+            16,
+          ),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF0284C7),
+                Color(0xFF38BDF8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(28),
+              bottomRight: Radius.circular(28),
+            ),
+          ),
+          child: SafeArea(
+            top: false,
+            bottom: false,
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.15),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    const Text(
+                      'Pengaturan',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.2),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.4),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.person,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _getUserName(),
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            _getUserEmail(),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.white.withValues(alpha: 0.75),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
-        title: const Text(
-          'Pengaturan',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
-        ),
-        centerTitle: false,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // ── Header Profil ──
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(28, 24, 28, 32),
-              decoration: BoxDecoration(
-                color: Color(AppConstants.primaryColor),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(28),
-                  bottomRight: Radius.circular(28),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.2),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.4),
-                        width: 2,
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.person,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _getUserName(),
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _getUserEmail(),
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.white.withValues(alpha: 0.75),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
             const SizedBox(height: 28),
 
             // ── Menu Items ──
@@ -312,18 +351,18 @@ class SettingScreen extends StatelessWidget {
                   //   title: 'Akun',
                   //   onTap: () {},
                   // ),
-                  // const SizedBox(height: 14),
-                  // _menuItem(
-                  //   icon: Icons.history_rounded,
-                  //   title: 'Riwayatku',
-                  //   onTap: () {},
-                  // ),
-                  // const SizedBox(height: 14),
-                  // _menuItem(
-                  //   icon: Icons.notifications_none_rounded,
-                  //   title: 'Notifikasi',
-                  //   onTap: () {},
-                  // ),
+                  const SizedBox(height: 14),
+                  _menuItem(
+                    icon: Icons.history_rounded,
+                    title: 'Riwayat',
+                    onTap: () {},
+                  ),
+                  const SizedBox(height: 14),
+                  _menuItem(
+                    icon: Icons.notifications_none_rounded,
+                    title: 'Notifikasi',
+                    onTap: () {},
+                  ),
                   // const SizedBox(height: 14),
                   // _menuItem(
                   //   icon: Icons.help_outline_rounded,
@@ -350,7 +389,8 @@ class SettingScreen extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () => _showLogoutDialog(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(AppConstants.dangerRed).withValues(alpha: 0.08),
+                    backgroundColor:
+                        Color(AppConstants.dangerRed).withValues(alpha: 0.08),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -362,7 +402,8 @@ class SettingScreen extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.logout_rounded,
-                        color: Color(AppConstants.dangerRed).withValues(alpha: 0.85),
+                        color: Color(AppConstants.dangerRed)
+                            .withValues(alpha: 0.85),
                         size: 22,
                       ),
                       const SizedBox(width: 10),
@@ -371,7 +412,8 @@ class SettingScreen extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: Color(AppConstants.dangerRed).withValues(alpha: 0.85),
+                          color: Color(AppConstants.dangerRed)
+                              .withValues(alpha: 0.85),
                         ),
                       ),
                     ],
