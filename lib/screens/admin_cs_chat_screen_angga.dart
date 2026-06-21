@@ -250,7 +250,11 @@ class _CsChatDetailScreenAnggaState extends State<CsChatDetailScreenAngga> {
       backgroundColor: Color(AppConstants.backgroundColor),
       appBar: AppBar(
         // request: display name on admin chat detail = "admin"
-        title: const Text('admin'),
+        title: const Text(
+          'Mahasiswa',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         backgroundColor: Color(AppConstants.primaryColor),
         foregroundColor: Colors.white,
         elevation: 0,
