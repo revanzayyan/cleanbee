@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/booking_model.dart';
 import '../services/booking_service.dart';
+import '../services/auth_service.dart';
 import '../utils/constants.dart';
 import '../widgets/admin_bottom_nav_angga.dart';
 import 'login_screen.dart';
@@ -135,10 +136,10 @@ class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Admin Angga',
-                        style: TextStyle(
-                          fontSize: 16,
+                      Text(
+                        'Admin Angga (${AuthService().currentUser?.email ?? "Unauthenticated"})',
+                        style: const TextStyle(
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),

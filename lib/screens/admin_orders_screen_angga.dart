@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/booking_model.dart';
 import '../services/booking_service.dart';
+import '../services/auth_service.dart';
 import '../utils/constants.dart';
 import 'admin_cs_chat_screen_angga.dart';
 
@@ -14,9 +15,19 @@ class AdminOrdersScreenAngga extends StatelessWidget {
     return Scaffold(
       backgroundColor: Color(AppConstants.backgroundColor),
       appBar: AppBar(
-        title: const Text(
-          'Pesanan Kebersihan',
-          style: TextStyle(fontWeight: FontWeight.w700),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Pesanan Kebersihan',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+            ),
+            Text(
+              'Auth: ${bookingService.orders.isNotEmpty ? "Has orders" : "No orders"} | User: ${AuthService().currentUser?.email ?? "NONE"} (${AuthService().currentUser?.uid ?? "NONE"})',
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w400, color: Colors.white70),
+            ),
+          ],
         ),
         backgroundColor: Color(AppConstants.primaryColor),
         foregroundColor: Colors.white,
