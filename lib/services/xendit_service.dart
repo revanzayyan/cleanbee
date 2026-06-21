@@ -8,10 +8,7 @@ class XenditService {
   /// - Android emulator: gunakan http://10.0.2.2:3000
   /// - Real device: gunakan IP komputer/server atau domain publik.
   static String get backendBaseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:3000';
-    }
-    return 'http://10.0.2.2:3000';
+    return 'https://cleanbee-backend-971233495843.asia-southeast2.run.app';
   }
 
   static const String createInvoicePath = '/v1/xendit/create-invoice';
