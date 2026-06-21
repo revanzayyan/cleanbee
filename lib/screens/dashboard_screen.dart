@@ -14,6 +14,9 @@ import 'chat_screen.dart';
 import 'jadwal_screen.dart';
 import 'notification_screen_angga.dart';
 import 'rating_screen.dart';
+import '../services/xendit_service.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -554,21 +557,24 @@ class _HomeContent extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('JADWAL',
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(AppConstants.primaryColor))),
-                          const SizedBox(height: 4),
-                          Text('${order.formattedDate}, ${order.timeRange}',
-                              style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(AppConstants.textDark))),
-                        ]),
+                    Expanded(
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('JADWAL',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(AppConstants.primaryColor))),
+                            const SizedBox(height: 4),
+                            Text('${order.formattedDate}, ${order.timeRange}',
+                                style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(AppConstants.textDark))),
+                          ]),
+                    ),
+                    const SizedBox(width: 8),
                     if (showSelesaiBtn)
                       GestureDetector(
                         onTap: () {
@@ -844,9 +850,69 @@ class _HomeContent extends StatelessWidget {
                   ConstrainedBox(
                     constraints: const BoxConstraints(minWidth: 140, maxWidth: 240),
                     child: ElevatedButton(
-                      onPressed: () {
-                        // TODO: implementasi redirect ke payment (invoice_url)
+                      onPressed: () async {
+                        // Close bottom sheet first
                         Navigator.pop(context);
+
+                        // Show temporary snackbar loading
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Menyiapkan halaman pembayaran Xendit...'),
+                          ),
+                        );
+
+                        try {
+                          final price = getPriceForCategory(order.category);
+                          final invoiceUrl = await XenditService().createInvoice(
+                            bookingId: order.id,
+                            amount: price,
+                            email: order.userEmail ?? 'customer@email.com',
+                            description: 'Pembayaran Jasa Pembersihan - ${order.category}',
+                            customer: {
+                              'given_names': 'Cleaning',
+                              'surname': 'Customer',
+                              'email': order.userEmail ?? 'customer@email.com',
+                              'mobile_number': '+6287774441111',
+                            },
+                            items: [
+                              {
+                                'name': 'Cleaning Service (${order.category})',
+                                'quantity': 1,
+                                'price': price,
+                                'category': 'Cleaning',
+                              },
+                            ],
+                            successRedirectUrl: 'https://www.google.com',
+                            failureRedirectUrl: 'https://www.google.com',
+                            metadata: {
+                              'booking_id': order.id,
+                              'booking': {
+                                'category': order.category,
+                                'buildingType': order.buildingType,
+                                'buildingDetail': order.buildingDetail,
+                                'floorDetail': order.floorDetail,
+                                'roomDetail': order.roomDetail,
+                                'date': order.date.toIso8601String(),
+                                'timeRange': order.timeRange,
+                                'userUid': order.userUid,
+                                'userEmail': order.userEmail,
+                              },
+                            },
+                          );
+
+                          final uri = Uri.parse(invoiceUrl.trim());
+                          final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          if (!launched) {
+                            throw 'Tidak dapat membuka halaman pembayaran (launchUrl gagal).';
+                          }
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Gagal memproses pembayaran: $e'),
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(AppConstants.primaryColor),

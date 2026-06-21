@@ -185,17 +185,12 @@ class BookingService extends ChangeNotifier {
       if (hasCustomId) {
         // Jika id sudah diberikan, pakai id itu sebagai docId.
         await _firestore.collection('bookings').doc(order.id).set(normalizedOrder.toMap(), SetOptions(merge: true));
-        final savedOrder = order;
-        _orders.add(savedOrder);
-        notifyListeners();
-        return savedOrder;
+        return order;
       }
 
       // fallback: auto-id
       final docRef = await _firestore.collection('bookings').add(order.toMap());
       final savedOrder = order.copyWith(id: docRef.id);
-      _orders.add(savedOrder);
-      notifyListeners();
 
       // Create notification for admin about the new booking
       await NotificationServiceAngga().addNotification(
