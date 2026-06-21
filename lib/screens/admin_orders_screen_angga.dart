@@ -60,7 +60,8 @@ class AdminOrdersScreenAngga extends StatelessWidget {
           }
 
           final bookings = snapshot.data ?? [];
-          final activeBookings = bookings.where((b) => b.status != 'Dibatalkan').toList();
+          // Only show incoming/unverified bookings (Menunggu Verifikasi or Menunggu Pembayaran)
+          final activeBookings = bookings.where((b) => b.status == 'Menunggu Verifikasi' || b.status == 'Menunggu Pembayaran').toList();
 
           if (activeBookings.isEmpty) {
             return Center(

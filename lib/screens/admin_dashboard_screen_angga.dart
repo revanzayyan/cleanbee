@@ -50,7 +50,8 @@ class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
         }
 
         final bookings = snapshot.data ?? [];
-        final activeBookings = bookings.where((b) => b.status != 'Dibatalkan' && b.status != 'Selesai').toList();
+        // Only show incoming/unverified bookings (Menunggu Verifikasi or Menunggu Pembayaran)
+        final activeBookings = bookings.where((b) => b.status == 'Menunggu Verifikasi' || b.status == 'Menunggu Pembayaran').toList();
         final hasUnverified = bookings.any((b) => b.status == 'Menunggu Verifikasi');
 
         return Scaffold(
