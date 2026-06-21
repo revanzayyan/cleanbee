@@ -60,8 +60,8 @@ class AdminOrdersScreenAngga extends StatelessWidget {
           }
 
           final bookings = snapshot.data ?? [];
-          // Only show incoming/unverified bookings (Menunggu Verifikasi or Menunggu Pembayaran)
-          final activeBookings = bookings.where((b) => b.status == 'Menunggu Verifikasi' || b.status == 'Menunggu Pembayaran').toList();
+          // Only show incoming/unverified bookings (Menunggu Verifikasi, Menunggu Pembayaran, Diproses, and Petugas Ditugaskan)
+          final activeBookings = bookings.where((b) => b.status == 'Menunggu Verifikasi' || b.status == 'Menunggu Pembayaran' || b.status == 'Diproses' || b.status == 'Petugas Ditugaskan').toList();
 
           if (activeBookings.isEmpty) {
             return Center(
@@ -416,29 +416,44 @@ class AdminOrdersScreenAngga extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.08),
+                        color: booking.status == 'Menunggu Pembayaran'
+                            ? Colors.orange.withValues(alpha: 0.08)
+                            : Colors.green.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                          Icon(
+                            booking.status == 'Menunggu Pembayaran'
+                                ? Icons.hourglass_empty
+                                : Icons.check_circle,
+                            color: booking.status == 'Menunggu Pembayaran'
+                                ? Colors.orange
+                                : Colors.green,
+                            size: 20,
+                          ),
                           const SizedBox(width: 10),
-                          const Expanded(
+                          Expanded(
                             child: Text(
-                              'Telah Dibayar (Transfer)',
+                              booking.status == 'Menunggu Pembayaran'
+                                  ? 'Menunggu Pembayaran'
+                                  : 'Telah Dibayar (Transfer)',
                               style: TextStyle(
-                                color: Colors.green,
+                                color: booking.status == 'Menunggu Pembayaran'
+                                    ? Colors.orange
+                                    : Colors.green,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
-                          TextButton(
-                            onPressed: () {},
-                            child: Text(
-                              'Lihat Bukti',
-                              style: TextStyle(color: Color(AppConstants.primaryColor)),
+                          if (booking.status != 'Menunggu Pembayaran')
+                            TextButton(
+                              onPressed: () {},
+                              child: Text(
+                                'Lihat Bukti',
+                                style: TextStyle(color: Color(AppConstants.primaryColor)),
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -591,6 +606,29 @@ class AdminOrdersScreenAngga extends StatelessWidget {
           ],
         ),
       );
+    } else if (booking.status == 'Menunggu Pembayaran') {
+      return Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+        decoration: BoxDecoration(
+          color: Color(AppConstants.backgroundColor),
+          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.hourglass_empty, color: Colors.orange, size: 16),
+            const SizedBox(width: 6),
+            const Text(
+              'Menunggu Pembayaran Pelanggan',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: Colors.orange,
+              ),
+            ),
+          ],
+        ),
+      );
     } else if (booking.status == 'Diproses') {
       return Container(
         padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
@@ -713,6 +751,26 @@ class AdminOrdersScreenAngga extends StatelessWidget {
           ),
         ],
       );
+    } else if (booking.status == 'Menunggu Pembayaran') {
+      return SizedBox(
+        width: double.infinity,
+        child: TextButton.icon(
+          onPressed: () => Navigator.pop(dialogContext),
+          icon: const Icon(Icons.hourglass_empty, color: Colors.orange),
+          label: const Text(
+            'Menunggu Pembayaran Pelanggan',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.orange,
+            ),
+          ),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            backgroundColor: Colors.orange.withValues(alpha: 0.1),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        ),
+      );
     } else if (booking.status == 'Diproses') {
       return SizedBox(
         width: double.infinity,
@@ -782,7 +840,7 @@ class AdminOrdersScreenAngga extends StatelessWidget {
     BookingModel booking,
     BookingService bookingService,
   ) async {
-    final cleaners = ['Raska', 'Rajel', 'Sari Dewi', 'Dimas Pratama', 'Sinta'];
+    final cleaners = ['Kean Subianto', 'Raska', 'Rajel', 'Sari Dewi', 'Dimas Pratama', 'Sinta'];
     String selectedCleaner = cleaners[0];
 
     final confirmed = await showDialog<bool>(
