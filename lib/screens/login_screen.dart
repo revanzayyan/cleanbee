@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/constants.dart';
 import '../widgets/custom_text_field.dart';
-import '../widgets/social_button.dart';
+// import '../widgets/social_button.dart';
 import '../services/auth_service.dart';
 import 'dashboard_screen.dart';
 import 'admin_dashboard_screen_angga.dart';
@@ -61,23 +61,23 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _handleGoogleSignIn() async {
-    setState(() => _isLoading = true);
-    try {
-      await _authService.signInWithGoogle();
-      if (!mounted) return;
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const DashboardScreen()),
-        (route) => false,
-      );
-    } catch (e) {
-      if (!mounted) return;
-      _showSnackBar(e.toString().replaceAll('Exception: ', ''), isError: true);
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
+  // Future<void> _handleGoogleSignIn() async {
+  //   setState(() => _isLoading = true);
+  //   try {
+  //     await _authService.signInWithGoogle();
+  //     if (!mounted) return;
+  //     Navigator.pushAndRemoveUntil(
+  //       context,
+  //       MaterialPageRoute(builder: (context) => const DashboardScreen()),
+  //       (route) => false,
+  //     );
+  //   } catch (e) {
+  //     if (!mounted) return;
+  //     _showSnackBar(e.toString().replaceAll('Exception: ', ''), isError: true);
+  //   } finally {
+  //     if (mounted) setState(() => _isLoading = false);
+  //   }
+  // }
 
   void _showSnackBar(String message, {required bool isError}) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -295,52 +295,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 28),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Divider(
-                              color: Color(AppConstants.inputBorder),
-                              thickness: 1.5),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          child: Text(
-                            'Atau lewat email',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(AppConstants.textLight)
-                                  .withValues(alpha: 0.8),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Divider(
-                              color: Color(AppConstants.inputBorder),
-                              thickness: 1.5),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    Row(
-                      children: [
-                        SocialButton(
-                          label: 'Google',
-                          icon: Icons.g_mobiledata,
-                          iconColor: Color(AppConstants.buttonGoogle),
-                          onPressed: _isLoading ? () {} : _handleGoogleSignIn,
-                        ),
-                        const SizedBox(width: 14),
-                        SocialButton(
-                          label: 'Apple',
-                          icon: Icons.apple,
-                          iconColor: Color(AppConstants.buttonApple),
-                          onPressed: () {
-                            _showSnackBar('Login Apple segera hadir',
-                                isError: true);
-                          },
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),

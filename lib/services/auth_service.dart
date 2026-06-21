@@ -67,9 +67,20 @@ class AuthService {
   }
 
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    try {
+      if (const bool.fromEnvironment('dart.library.html', defaultValue: false)) {
+        await _auth.signOut();
+        return;
+      }
+
+      await _googleSignIn.signOut();
+    } catch (_) {
+      // Jika signOut Google gagal, tetap lanjut signOut Firebase.
+    }
+
     await _auth.signOut();
   }
+
 
   Future<void> resetPassword(String email) async {
     try {

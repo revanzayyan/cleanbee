@@ -4,9 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 class ChatMessage {
-  final String sender;
+  final String sender; // "User" | "Admin"
   final String text;
-  final String time;
+  final String time; // ISO string for UI
 
   ChatMessage({
     required this.sender,
@@ -15,88 +15,212 @@ class ChatMessage {
   });
 }
 
-class ChatService with ChangeNotifier {
+class ChatConversation {
+  final String chatId;
+  final String userName;
+  final String lastMessage;
+  final Timestamp? lastMessageTime;
+  final int unreadAdmin;
+  final int unreadUser;
+
+  ChatConversation({
+    required this.chatId,
+    required this.userName,
+    required this.lastMessage,
+    required this.lastMessageTime,
+    required this.unreadAdmin,
+    required this.unreadUser,
+  });
+}
+
+class ChatService {
   static final ChatService _instance = ChatService._internal();
   factory ChatService() => _instance;
 
   ChatService._internal();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final Map<String, List<ChatMessage>> _conversations = {};
-  final Map<String, StreamSubscription<QuerySnapshot<Map<String, dynamic>>>> _listeners = {};
 
-  List<ChatMessage> getMessages(String chatId) {
-    _ensureConversation(chatId);
-    return List.unmodifiable(_conversations[chatId]!);
+  Stream<List<ChatConversation>> listenToChatList() {
+    return _firestore
+        .collection('chats')
+        .snapshots()
+        .map((snapshot) {
+      final list = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return ChatConversation(
+          chatId: doc.id,
+          userName: (data['userName'] ?? '') as String,
+          lastMessage: (data['lastMessage'] ?? '') as String,
+          lastMessageTime: data['lastMessageTime'] as Timestamp?,
+          unreadAdmin: (data['unreadAdmin'] ?? 0) as int,
+          unreadUser: (data['unreadUser'] ?? 0) as int,
+        );
+      }).toList();
+
+      list.sort((a, b) {
+        final at = a.lastMessageTime;
+        final bt = b.lastMessageTime;
+        if (at == null && bt == null) return 0;
+        if (at == null) return 1;
+        if (bt == null) return -1;
+        return bt.compareTo(at);
+      });
+
+      return list;
+    });
   }
 
-  Future<void> listenToChat(String chatId) async {
-    if (chatId.isEmpty) return;
-    if (_listeners.containsKey(chatId)) return;
+  Stream<List<ChatMessage>> listenToMessages(String chatId) {
+    if (chatId.isEmpty) {
+      return const Stream.empty();
+    }
 
-    _ensureConversation(chatId);
-    final sub = _firestore
+    return _firestore
         .collection('chats')
         .doc(chatId)
         .collection('messages')
         .orderBy('created_at')
         .snapshots()
-        .listen((snapshot) {
-      final messages = snapshot.docs.map((doc) {
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
         final data = doc.data();
-        return ChatMessage(
-          sender: (data['sender'] ?? 'User') as String,
-          text: (data['text'] ?? '') as String,
-          time: (data['created_at'] ?? '') as String,
-        );
-      }).toList();
+        final sender = (data['sender'] ?? 'User') as String;
+        final text = (data['text'] ?? '') as String;
+        final createdAt = data['created_at'];
+        String timeIso = '';
+        if (createdAt is Timestamp) {
+          timeIso = createdAt.toDate().toIso8601String();
+        } else if (createdAt is String) {
+          timeIso = createdAt;
+        }
 
-      _conversations[chatId] = messages;
-      notifyListeners();
-    }, onError: (error) {
-      debugPrint('ChatService listen error for $chatId: $error');
+        return ChatMessage(sender: sender, text: text, time: timeIso);
+      }).toList();
+    });
+  }
+
+  Future<String> startOrGetChat(String userName) async {
+    final userNameTrim = userName.trim();
+    if (userNameTrim.isEmpty) {
+      throw ArgumentError('userName/chatId is empty');
+    }
+
+    // sesuai pilihan Anda: chatId = userUid
+    // tapi sampai integrasi auth/userUid lengkap masuk ke UI,
+    // kita anggap parameter yang dikirim dari UI sudah berisi chatId (UID).
+    final chatId = userNameTrim;
+
+    final docRef = _firestore.collection('chats').doc(chatId);
+    await _firestore.runTransaction((tx) async {
+      final snap = await tx.get(docRef);
+      if (!snap.exists) {
+        tx.set(docRef, {
+          'userName': userNameTrim,
+          'lastMessage': '',
+          'lastMessageTime': null,
+          'unreadAdmin': 0,
+          'unreadUser': 0,
+        });
+      }
     });
 
-    _listeners[chatId] = sub;
+    return chatId;
   }
 
-  void stopListening(String chatId) {
-    _listeners.remove(chatId)?.cancel();
-  }
 
-  Future<void> sendUserMessage(String chatId, String text) async {
-    await _sendMessage(chatId, 'User', text);
-  }
+  Future<void> sendMessage({
+    required String chatId,
+    required String sender, // "User" | "Admin"
+    required String text,
+  }) async {
+    final trimmed = text.trim();
+    if (chatId.isEmpty || trimmed.isEmpty) return;
 
-  Future<void> sendAdminMessage(String chatId, String text) async {
-    await _sendMessage(chatId, 'Admin', text);
-  }
-
-  Future<void> _sendMessage(String chatId, String sender, String text) async {
-    if (chatId.isEmpty || text.trim().isEmpty) return;
-
-    final now = DateTime.now().toIso8601String();
+    final now = Timestamp.now();
     try {
-      await _firestore
+      final messageDoc = _firestore
           .collection('chats')
           .doc(chatId)
           .collection('messages')
-          .add({
-        'sender': sender,
-        'text': text,
-        'created_at': now,
+          .doc();
+
+      await _firestore.runTransaction((tx) async {
+        // buat chat doc bila belum ada
+        final chatRef = _firestore.collection('chats').doc(chatId);
+        final chatSnap = await tx.get(chatRef);
+        if (!chatSnap.exists) {
+          // fallback userName jika belum tersimpan: ambil docId
+          tx.set(chatRef, {
+            'userName': chatId,
+            'lastMessage': '',
+            'lastMessageTime': null,
+            'unreadAdmin': 0,
+            'unreadUser': 0,
+          });
+        }
+
+        tx.set(messageDoc, {
+          'sender': sender,
+          'text': trimmed,
+          'created_at': now,
+        });
+
+        // Update lastMessage
+        // Aturan badge/unread:
+        // - Kalau Admin mengirim: unreadUser (untuk pihak User) naik, unreadAdmin direset (karena Admin sedang mengirim/terbaca).
+        // - Kalau User mengirim: unreadAdmin naik, unreadUser direset.
+        tx.update(chatRef, {
+          'lastMessage': trimmed,
+          'lastMessageTime': now,
+          if (sender == 'Admin')
+            ...{
+              'unreadUser': FieldValue.increment(1),
+              'unreadAdmin': 0,
+            }
+          else
+            ...{
+              'unreadAdmin': FieldValue.increment(1),
+              'unreadUser': 0,
+            },
+        });
       });
     } catch (e) {
-      debugPrint('ChatService send error for $chatId: $e');
+      debugPrint('ChatService sendMessage error for $chatId: $e');
     }
   }
 
-  void _ensureConversation(String chatId) {
-    _conversations.putIfAbsent(chatId, () => []);
+  Future<void> markAsRead(String chatId, String userRole) async {
+    if (chatId.isEmpty) return;
+    final docRef = _firestore.collection('chats').doc(chatId);
+
+    try {
+      await _firestore.runTransaction((tx) async {
+        final snap = await tx.get(docRef);
+        if (!snap.exists) return;
+
+        // reset unread milik pihak yang sedang membuka chat
+        if (userRole == 'Admin') {
+          tx.update(docRef, {'unreadAdmin': 0});
+          // opsional: jika Admin membalas, unreadUser juga tidak masalah.
+        } else {
+          tx.update(docRef, {'unreadUser': 0});
+        }
+      });
+    } catch (e) {
+      debugPrint('ChatService markAsRead error for $chatId: $e');
+    }
   }
 
-  void disposeChat(String chatId) {
-    stopListening(chatId);
-    _conversations.remove(chatId);
+
+  // Backward compatibility untuk kode lama
+  Future<void> sendUserMessage(String chatId, String text) => sendMessage(chatId: chatId, sender: 'User', text: text);
+  Future<void> sendAdminMessage(String chatId, String text) => sendMessage(chatId: chatId, sender: 'Admin', text: text);
+
+  // Backward compatibility: streamless state tidak dipakai lagi, tetap sediakan method minimal.
+  List<ChatMessage> getMessages(String chatId) {
+    // dummy: UI baru memakai listenToMessages.
+    return const [];
   }
 }
+

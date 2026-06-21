@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/constants.dart';
-import '../services/chat_service.dart' as chat_service;
+import '../services/chat_service.dart';
 
 class ChatDetailScreen extends StatefulWidget {
   final String chatId;
@@ -24,49 +24,21 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
-  final chat_service.ChatService _chatService = chat_service.ChatService();
 
-  List<ChatMessage> _messages = [];
-  final bool _isTyping = false;
+  final ChatService _chatService = ChatService();
 
   @override
   void initState() {
     super.initState();
-    _loadMessages();
-    _chatService.addListener(_onChatUpdates);
-    _chatService.listenToChat(widget.chatId);
+    _chatService.markAsRead(widget.chatId, 'User');
+
     _focusNode.addListener(() {
       if (_focusNode.hasFocus) {
         _scrollToBottom();
       }
     });
-  }
 
-  void _loadMessages() {
-    _messages = _chatService
-        .getMessages(widget.chatId)
-        .map((item) => ChatMessage(
-              text: item.text,
-              time: item.time,
-              isFromMe: item.sender != 'Admin',
-            ))
-        .toList();
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-  }
-
-  void _onChatUpdates() {
-    if (!mounted) return;
-    setState(() {
-      _messages = _chatService
-          .getMessages(widget.chatId)
-          .map((item) => ChatMessage(
-                text: item.text,
-                time: item.time,
-                isFromMe: item.sender != 'Admin',
-              ))
-          .toList();
-    });
-    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -74,7 +46,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 250),
           curve: Curves.easeOut,
         );
       }
@@ -85,7 +57,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
-    _chatService.sendUserMessage(widget.chatId, text);
+    _chatService.sendMessage(
+      chatId: widget.chatId,
+      sender: 'User',
+      text: text,
+    );
+
     _messageController.clear();
     _focusNode.unfocus();
     _scrollToBottom();
@@ -93,7 +70,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   @override
   void dispose() {
-    _chatService.removeListener(_onChatUpdates);
     _messageController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
@@ -170,27 +146,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        widget.name,
+                        // request: display name on user chat detail = "admin"
+                        'admin',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
                       ),
-                      Text(
-                        widget.isOnline ? 'Online' : 'Offline',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.white.withValues(alpha: 0.75),
-                        ),
-                      ),
                     ],
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.call_outlined, size: 22),
-                  onPressed: () {},
-                  color: Colors.white,
                 ),
               ],
             ),
@@ -222,15 +187,22 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              itemCount: _messages.length + (_isTyping ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index == _messages.length) {
-                  return _buildTypingIndicator();
-                }
-                return _buildMessageBubble(_messages[index]);
+            child: StreamBuilder<List<ChatMessage>>(
+              stream: _chatService.listenToMessages(widget.chatId),
+              builder: (context, snapshot) {
+                final messages = snapshot.data ?? [];
+                WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final msg = messages[index];
+                    final isMe = msg.sender != 'Admin';
+                    return _buildMessageBubble(msg, isMe: isMe);
+                  },
+                );
               },
             ),
           ),
@@ -240,9 +212,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage msg) {
-    final isMe = msg.isFromMe;
-
+  Widget _buildMessageBubble(ChatMessage msg, {required bool isMe}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -258,10 +228,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                // ✅ Diubah: Warna bubble masuk jadi putih
-                color: isMe
-                    ? Color(AppConstants.primaryColor)
-                    : Colors.white,
+                color: isMe ? Color(AppConstants.primaryColor) : Colors.white,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(18),
                   topRight: const Radius.circular(18),
@@ -289,28 +256,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        msg.time,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color: isMe
-                              ? Colors.white.withValues(alpha: 0.75)
-                              : Color(AppConstants.textDark).withValues(alpha: 0.6),
-                        ),
-                      ),
-                      if (isMe) ...[
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.done_all_rounded,
-                          size: 14,
-                          color: Colors.white.withValues(alpha: 0.7),
-                        ),
-                      ],
-                    ],
+                  Text(
+                    msg.time,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: isMe
+                          ? Colors.white.withValues(alpha: 0.75)
+                          : Color(AppConstants.textDark).withValues(alpha: 0.6),
+                    ),
                   ),
                 ],
               ),
@@ -320,67 +274,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           if (isMe) const SizedBox(width: 8),
         ],
       ),
-    );
-  }
-
-  Widget _buildTypingIndicator() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          const SizedBox(width: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            decoration: BoxDecoration(
-              // ✅ Diubah: Warna bubble typing jadi putih agar senada
-              color: Colors.white,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(18),
-                topRight: Radius.circular(18),
-                bottomLeft: Radius.circular(4),
-                bottomRight: Radius.circular(18),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _typingDot(0),
-                const SizedBox(width: 4),
-                _typingDot(1),
-                const SizedBox(width: 4),
-                _typingDot(2),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-    );
-  }
-
-  Widget _typingDot(int index) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.3, end: 1.0),
-      duration: Duration(milliseconds: 600 + (index * 200)),
-      builder: (context, value, child) {
-        return Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Color(AppConstants.textLight).withValues(alpha: value * 0.5),
-          ),
-        );
-      },
     );
   }
 
@@ -444,7 +337,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                       color: Color(AppConstants.textLight),
                     ),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    contentPadding:
+                        EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   ),
                   onSubmitted: (_) => _sendMessage(),
                 ),
@@ -481,14 +375,3 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 }
 
-class ChatMessage {
-  final String text;
-  final String time;
-  final bool isFromMe;
-
-  const ChatMessage({
-    required this.text,
-    required this.time,
-    required this.isFromMe,
-  });
-}

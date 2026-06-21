@@ -337,6 +337,7 @@ class SettingScreen extends StatelessWidget {
         ),
       ),
       body: SingleChildScrollView(
+        padding: EdgeInsets.zero,
         child: Column(
           children: [
             const SizedBox(height: 28),

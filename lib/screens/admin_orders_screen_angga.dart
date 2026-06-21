@@ -389,14 +389,28 @@ class AdminOrdersScreenAngga extends StatelessWidget {
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       subtitle: Text(booking.userEmail ?? 'No Email'),
-                      trailing: IconButton(
+                    trailing: IconButton(
                         icon: const Icon(Icons.chat_rounded, color: Colors.blue),
                         onPressed: () {
                           Navigator.pop(ctx);
+
+                          final chatId = booking.userUid;
+                          if (chatId == null || chatId.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('User belum memiliki userUid.'),
+                              ),
+                            );
+                            return;
+                          }
+
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const CsChatListScreenAngga(),
+                              builder: (_) => CsChatDetailScreenAngga(
+                                chatId: chatId,
+                                userName: booking.userEmail ?? 'User',
+                              ),
                             ),
                           );
                         },
