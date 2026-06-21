@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../utils/constants.dart';
-import '../widgets/social_button.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 
@@ -134,58 +133,6 @@ class WelcomeScreen extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 26),
-
-                // ── Divider "Atau lewat email" ──
-                Row(
-                  children: [
-                    Expanded(
-                      child: Divider(
-                        color: Color(AppConstants.inputBorder),
-                        thickness: 1.5,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      child: Text(
-                        'Atau lewat email',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(AppConstants.textLight)
-                              .withValues(alpha: 0.8),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Divider(
-                        color: Color(AppConstants.inputBorder),
-                        thickness: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 18),
-
-                // ── Social Buttons (Putih, border biru pucat) ──
-                Row(
-                  children: [
-                    SocialButton(
-                      label: 'Google',
-                      icon: Icons.g_mobiledata,
-                      iconColor: Color(AppConstants.buttonGoogle),
-                      onPressed: () {},
-                    ),
-                    const SizedBox(width: 14),
-                    SocialButton(
-                      label: 'Apple',
-                      icon: Icons.apple,
-                      iconColor: Color(AppConstants.buttonApple),
-                      onPressed: () {},
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 40),
               ],
             ),
           ),

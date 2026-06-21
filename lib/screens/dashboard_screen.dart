@@ -14,6 +14,7 @@ import 'chat_screen.dart';
 import 'jadwal_screen.dart';
 import 'notification_screen_angga.dart';
 import 'rating_screen.dart';
+import 'welcome_screen.dart';
 import '../services/xendit_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -337,13 +338,39 @@ class _HomeContent extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          // ✅ FIX: Use placeholder instead of undefined SettingScreen
+          // Button logout (dengan alert)
           GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => const _SettingScreenPlaceholder()),
-            ),
+            onTap: () {
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (dialogContext) {
+                  return AlertDialog(
+                    title: const Text('Apakah anda ingin keluar?'),
+                    content: const Text('Pilih ya untuk keluar, pilih tidak untuk batal.'),
+                    actions: [
+                      TextButton(
+                        onPressed: () async {
+                          Navigator.pop(dialogContext);
+                          await AuthService().signOut();
+                          if (!context.mounted) return;
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+                            (route) => false,
+                          );
+                        },
+                        child: const Text('Ya'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        child: const Text('Tidak'),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
             child: Container(
               width: 44,
               height: 44,
@@ -359,7 +386,7 @@ class _HomeContent extends StatelessWidget {
                 ],
               ),
               child: const Icon(
-                Icons.settings_outlined,
+                Icons.logout_rounded,
                 color: Colors.white,
                 size: 22,
               ),
@@ -1497,19 +1524,3 @@ class _HomeContent extends StatelessWidget {
   }
 }
 
-
-// ✅ Placeholder classes for undefined screens
-class _SettingScreenPlaceholder extends StatelessWidget {
-  const _SettingScreenPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Pengaturan')),
-      body: const Center(
-        child: Text('Halaman Pengaturan',
-            style: TextStyle(fontSize: 18, color: Colors.grey)),
-      ),
-    );
-  }
-}// test
