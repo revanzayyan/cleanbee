@@ -34,25 +34,25 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (email.toLowerCase() == 'asoy2023@gmail.com' && password == 'siadmin') {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const AdminDashboardScreenAngga()),
-        (route) => false,
-      );
-      return;
-    }
-
     setState(() => _isLoading = true);
 
     try {
       await _authService.signInWithEmail(email, password);
       if (!mounted) return;
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const DashboardScreen()),
-        (route) => false,
-      );
+
+      if (email.toLowerCase() == 'asoy2023@gmail.com') {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminDashboardScreenAngga()),
+          (route) => false,
+        );
+      } else {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const DashboardScreen()),
+          (route) => false,
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       _showSnackBar(e.toString().replaceAll('Exception: ', ''), isError: true);

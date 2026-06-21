@@ -113,7 +113,7 @@ class BookingService extends ChangeNotifier {
     if (userUid.isEmpty) return;
 
     _bookingSub = _firestore
-        .collection('booking')
+        .collection('bookings')
         .where('user_uid', isEqualTo: userUid)
         .snapshots()
         .listen((snapshot) {
@@ -184,7 +184,7 @@ class BookingService extends ChangeNotifier {
 
       if (hasCustomId) {
         // Jika id sudah diberikan, pakai id itu sebagai docId.
-        await _firestore.collection('booking').doc(order.id).set(normalizedOrder.toMap(), SetOptions(merge: true));
+        await _firestore.collection('bookings').doc(order.id).set(normalizedOrder.toMap(), SetOptions(merge: true));
         final savedOrder = order;
         _orders.add(savedOrder);
         notifyListeners();
@@ -192,7 +192,7 @@ class BookingService extends ChangeNotifier {
       }
 
       // fallback: auto-id
-      final docRef = await _firestore.collection('booking').add(order.toMap());
+      final docRef = await _firestore.collection('bookings').add(order.toMap());
       final savedOrder = order.copyWith(id: docRef.id);
       _orders.add(savedOrder);
       notifyListeners();
@@ -217,7 +217,7 @@ class BookingService extends ChangeNotifier {
 
   void syncUserBookings(String userId) {
     _bookingsSubscription?.cancel();
-    _bookingsSubscription = _firestore.collection('booking')
+    _bookingsSubscription = _firestore.collection('bookings')
         .where('user_uid', isEqualTo: userId)
         .snapshots()
         .listen((snapshot) {
@@ -236,7 +236,7 @@ class BookingService extends ChangeNotifier {
   }
 
   Stream<List<BookingModel>> getBookingsStream() {
-    return _firestore.collection('booking')
+    return _firestore.collection('bookings')
         .orderBy('created_at', descending: true)
         .snapshots()
         .map((snapshot) {
@@ -249,7 +249,7 @@ class BookingService extends ChangeNotifier {
   Future<void> cancelOrder(String orderId) async {
     if (orderId.isEmpty) return;
     try {
-      await _firestore.collection('booking').doc(orderId).set(
+      await _firestore.collection('bookings').doc(orderId).set(
         {
           'status': 'Dibatalkan',
           'cancelled_at': DateTime.now().toIso8601String(),
@@ -265,13 +265,13 @@ class BookingService extends ChangeNotifier {
   Future<void> updateOrderStatusInFirestore(String orderId, String newStatus) async {
     try {
       // Fetch booking details first to know who the user is
-      final docSnap = await _firestore.collection('booking').doc(orderId).get();
+      final docSnap = await _firestore.collection('bookings').doc(orderId).get();
       if (docSnap.exists) {
         final data = docSnap.data()!;
         final userUid = data['user_uid'] as String?;
         final category = data['category'] ?? 'Layanan Kebersihan';
         
-        await _firestore.collection('booking').doc(orderId).update({'status': newStatus});
+        await _firestore.collection('bookings').doc(orderId).update({'status': newStatus});
 
         // Update local status
         final index = _orders.indexWhere((o) => o.id == orderId);
@@ -334,7 +334,7 @@ class BookingService extends ChangeNotifier {
   Future<void> assignPetugas(String orderId, String petugasName) async {
     if (orderId.isEmpty) return;
     try {
-      await _firestore.collection('booking').doc(orderId).update({
+      await _firestore.collection('bookings').doc(orderId).update({
         'status': 'Petugas Ditugaskan',
         'petugas_name': petugasName,
         'petugas_rating': 4.9,
@@ -352,7 +352,7 @@ class BookingService extends ChangeNotifier {
       }
 
       // Send notification
-      final docSnap = await _firestore.collection('booking').doc(orderId).get();
+      final docSnap = await _firestore.collection('bookings').doc(orderId).get();
       if (docSnap.exists) {
         final data = docSnap.data()!;
         final userUid = data['user_uid'] as String?;
@@ -419,7 +419,7 @@ class BookingService extends ChangeNotifier {
   Future<void> markOrderDone(String orderId) async {
     if (orderId.isEmpty) return;
     try {
-      await _firestore.collection('booking').doc(orderId).set(
+      await _firestore.collection('bookings').doc(orderId).set(
         {
           'status': 'menunggu_konfirmasi',
           'done_at': DateTime.now().toIso8601String(),
@@ -433,7 +433,7 @@ class BookingService extends ChangeNotifier {
       );
 
       // Send notification
-      final docSnap = await _firestore.collection('booking').doc(orderId).get();
+      final docSnap = await _firestore.collection('bookings').doc(orderId).get();
       if (docSnap.exists) {
         final data = docSnap.data()!;
         final userUid = data['user_uid'] as String?;
@@ -469,7 +469,7 @@ class BookingService extends ChangeNotifier {
   Future<void> completeOrder(String orderId) async {
     if (orderId.isEmpty) return;
     try {
-      await _firestore.collection('booking').doc(orderId).set(
+      await _firestore.collection('bookings').doc(orderId).set(
         {
           'status': 'Selesai',
           'completed_at': DateTime.now().toIso8601String(),

@@ -27,7 +27,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final chat_service.ChatService _chatService = chat_service.ChatService();
 
   List<ChatMessage> _messages = [];
-  bool _isTyping = false;
+  final bool _isTyping = false;
 
   @override
   void initState() {
