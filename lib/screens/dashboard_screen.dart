@@ -618,6 +618,70 @@ class _HomeContent extends StatelessWidget {
   }
 
   void _showOrderDetail(BuildContext context, {required BookingModel order}) {
+    String headerTitle;
+    String headerSubtitle;
+    IconData headerIcon;
+    Color headerColor;
+
+    switch (order.status) {
+      case 'Menunggu Pembayaran':
+        headerTitle = 'Menunggu Pembayaran';
+        headerSubtitle = 'Silakan selesaikan pembayaran Anda.';
+        headerIcon = Icons.payment_rounded;
+        headerColor = Colors.orange;
+        break;
+      case 'Diproses':
+        headerTitle = 'Sedang Diproses';
+        headerSubtitle = 'Pesanan terkonfirmasi, menunggu petugas ditugaskan.';
+        headerIcon = Icons.hourglass_empty_rounded;
+        headerColor = Color(AppConstants.primaryColor);
+        break;
+      case 'Petugas Ditugaskan':
+        headerTitle = 'Petugas Ditugaskan';
+        headerSubtitle = '${order.petugasName} sedang menuju lokasi kamu.';
+        headerIcon = Icons.directions_car_rounded;
+        headerColor = Colors.purple;
+        break;
+      case 'menunggu_konfirmasi':
+        headerTitle = 'Pekerjaan Selesai';
+        headerSubtitle = 'Silakan konfirmasi & beri ulasan pekerjaan.';
+        headerIcon = Icons.clean_hands_rounded;
+        headerColor = Colors.green;
+        break;
+      case 'Selesai':
+        headerTitle = 'Pesanan Selesai';
+        headerSubtitle = 'Terima kasih telah menggunakan Cleanbee!';
+        headerIcon = Icons.check_circle_rounded;
+        headerColor = Colors.green;
+        break;
+      default:
+        headerTitle = 'Status: ${order.status}';
+        headerSubtitle = '';
+        headerIcon = Icons.info_outline;
+        headerColor = Colors.grey;
+    }
+
+    int getPriceForCategory(String category) {
+      switch (category) {
+        case 'Kamar Tidur':
+          return 50000;
+        case 'Kamar Mandi':
+          return 40000;
+        case 'Kamar Tidur + Kamar Mandi':
+          return 85000;
+        default:
+          return 50000;
+      }
+    }
+
+    String formatPrice(int price) {
+      final str = price.toString();
+      if (str.length > 3) {
+        return 'Rp ${str.substring(0, str.length - 3)}.${str.substring(str.length - 3)}';
+      }
+      return 'Rp $str';
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -654,27 +718,24 @@ class _HomeContent extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                          color: Color(AppConstants.primaryColor)
-                              .withValues(alpha: 0.1),
+                          color: headerColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(16)),
                       child: Row(children: [
-                        Icon(Icons.hourglass_top_rounded,
-                            color: Color(AppConstants.primaryColor)),
+                        Icon(headerIcon, color: headerColor),
                         const SizedBox(width: 12),
                         Expanded(
                             child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                              Text('Sedang Diproses',
+                              Text(headerTitle,
                                   style: TextStyle(
-                                      color: Color(AppConstants.primaryColor),
+                                      color: headerColor,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 15)),
                               const SizedBox(height: 2),
-                              Text('Petugas sedang menuju lokasi kamu',
+                              Text(headerSubtitle,
                                   style: TextStyle(
-                                      color: Color(AppConstants.primaryColor)
-                                          .withValues(alpha: 0.7),
+                                      color: headerColor.withValues(alpha: 0.7),
                                       fontSize: 13))
                             ]))
                       ])),
@@ -740,19 +801,36 @@ class _HomeContent extends StatelessWidget {
                   Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                          color: Colors.green.withValues(alpha: 0.1),
+                          color: order.status == 'Menunggu Pembayaran'
+                              ? Colors.orange.withValues(alpha: 0.1)
+                              : Colors.green.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(16)),
-                      child: const Row(children: [
-                        Icon(Icons.check_circle, color: Colors.green),
-                        SizedBox(width: 12),
+                      child: Row(children: [
+                        Icon(
+                          order.status == 'Menunggu Pembayaran'
+                              ? Icons.hourglass_empty
+                              : Icons.check_circle,
+                          color: order.status == 'Menunggu Pembayaran'
+                              ? Colors.orange
+                              : Colors.green,
+                        ),
+                        const SizedBox(width: 12),
                         Expanded(
-                            child: Text('Telah Dibayar',
+                            child: Text(
+                                order.status == 'Menunggu Pembayaran'
+                                    ? 'Menunggu Pembayaran'
+                                    : 'Telah Dibayar',
                                 style: TextStyle(
-                                    color: Colors.green,
+                                    color: order.status == 'Menunggu Pembayaran'
+                                        ? Colors.orange
+                                        : Colors.green,
                                     fontWeight: FontWeight.bold))),
-                        Text('Rp 35.000',
+                        Text(
+                            formatPrice(getPriceForCategory(order.category)),
                             style: TextStyle(
-                                color: Colors.green,
+                                color: order.status == 'Menunggu Pembayaran'
+                                    ? Colors.orange
+                                    : Colors.green,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16))
                       ]))
@@ -868,6 +946,38 @@ class _HomeContent extends StatelessWidget {
                 // Selesai => tidak ada tombol
                 if (order.status == 'Selesai')
                   const SizedBox.shrink(),
+
+                // Menunggu Konfirmasi => tampil: Konfirmasi & Ulas
+                if (order.status == 'menunggu_konfirmasi')
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(minWidth: 140, maxWidth: 240),
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => RatingScreen(order: order),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.rate_review_rounded, color: Colors.white),
+                      label: const Text(
+                        'Konfirmasi & Ulas',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ],
