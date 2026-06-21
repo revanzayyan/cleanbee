@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../utils/constants.dart';
 import '../models/booking_model.dart';
+import '../models/review_model.dart';
 import '../services/review_service.dart';
-import 'before_after_screen.dart';
+import '../services/booking_service.dart';
+import '../services/auth_service.dart';
 
 class RatingScreen extends StatefulWidget {
   final BookingModel order;
@@ -17,11 +19,14 @@ class RatingScreen extends StatefulWidget {
 class _RatingScreenState extends State<RatingScreen>
     with SingleTickerProviderStateMixin {
   int _selectedRating = 0;
+  bool _isSubmitting = false;
   final TextEditingController _commentController = TextEditingController();
   late AnimationController _animController;
   final List<Animation<double>> _starScales = [];
 
   final ReviewService _reviewService = ReviewService();
+  final BookingService _bookingService = BookingService();
+  final AuthService _authService = AuthService();
 
   @override
   void initState() {
@@ -72,30 +77,91 @@ class _RatingScreenState extends State<RatingScreen>
     );
   }
 
-  void _onLanjutkan() {
-    if (_selectedRating == 0) return;
+  Future<void> _onLanjutkan() async {
+    if (_selectedRating == 0 || _isSubmitting) return;
 
-    // Update draft dengan comment terbaru
-    _reviewService.saveDraft(
-      orderId: widget.order.id,
-      rating: _selectedRating,
-      comment: _commentController.text.trim().isEmpty
-          ? null
-          : _commentController.text.trim(),
-    );
+    final comment = _commentController.text.trim().isEmpty
+        ? null
+        : _commentController.text.trim();
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => BeforeAfterScreen(
-          order: widget.order,
-          rating: _selectedRating,
-          comment: _commentController.text.trim().isEmpty
-              ? null
-              : _commentController.text.trim(),
+    setState(() => _isSubmitting = true);
+
+    try {
+      final user = _authService.currentUser;
+      final customerName = (user?.displayName?.isNotEmpty == true)
+          ? user!.displayName!
+          : (user?.email?.split('@').first ?? 'Pelanggan');
+
+      final review = ReviewModel(
+        orderId: widget.order.id,
+        customerId: user?.uid ?? '',
+        customerName: customerName,
+        staffId: widget.order.petugasName,
+        staffName: widget.order.petugasName,
+        rating: _selectedRating,
+        comment: comment,
+        afterPhotoUrl: widget.order.afterPhotoUrl,
+        beforePhotoUrl: widget.order.beforePhotoUrl,
+      );
+
+      await _reviewService.addReview(review);
+      await _bookingService.completeOrder(widget.order.id);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle_rounded, color: Colors.white),
+              SizedBox(width: 10),
+              Text(
+                'Terima kasih atas ulasan Anda! 🌟',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(AppConstants.primaryColor),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 3),
         ),
-      ),
-    );
+      );
+
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } catch (e) {
+      setState(() => _isSubmitting = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Gagal mengirim ulasan. Coba lagi.',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              TextButton(
+                onPressed: _onLanjutkan,
+                child: const Text('Coba Lagi',
+                    style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
   }
 
   @override
@@ -366,7 +432,7 @@ class _RatingScreenState extends State<RatingScreen>
   }
 
   Widget _buildLanjutkanButton() {
-    final isEnabled = _selectedRating > 0;
+    final isEnabled = _selectedRating > 0 && !_isSubmitting;
 
     return AnimatedOpacity(
       opacity: isEnabled ? 1.0 : 0.45,
@@ -386,14 +452,23 @@ class _RatingScreenState extends State<RatingScreen>
             shadowColor:
                 const Color(AppConstants.primaryColor).withValues(alpha: 0.4),
           ),
-          child: const Text(
-            'Lanjutkan',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
+          child: _isSubmitting
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2.5,
+                  ),
+                )
+              : const Text(
+                  'Kirim Ulasan',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
         ),
       ),
     );
