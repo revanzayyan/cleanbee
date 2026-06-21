@@ -1336,27 +1336,4 @@ class _SettingScreenPlaceholder extends StatelessWidget {
       ),
     );
   }
-}
-
-class _ChatDetailPlaceholder extends StatelessWidget {
-  final String name;
-  final bool isOnline;
-
-  const _ChatDetailPlaceholder({
-    required this.name,
-    required this.isOnline,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(name)),
-      body: Center(
-        child: Text('Chat dengan $name',
-            style: const TextStyle(fontSize: 18, color: Colors.grey)),
-      ),
-    );
-  }
-}
-
-// test
+}// test

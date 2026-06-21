@@ -32,6 +32,22 @@ class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
     return StreamBuilder<List<BookingModel>>(
       stream: _bookingService.getBookingsStream(),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Scaffold(
+            backgroundColor: Color(AppConstants.backgroundColor),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Text(
+                  'Error loading bookings: ${snapshot.error}',
+                  style: const TextStyle(color: Colors.red, fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          );
+        }
+
         final bookings = snapshot.data ?? [];
         final activeBookings = bookings.where((b) => b.status != 'Dibatalkan' && b.status != 'Selesai').toList();
         final hasUnverified = bookings.any((b) => b.status == 'Menunggu Verifikasi');
