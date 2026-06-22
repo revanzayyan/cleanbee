@@ -4,7 +4,7 @@ import '../services/booking_service.dart';
 import '../services/auth_service.dart';
 import '../utils/constants.dart';
 import '../widgets/admin_bottom_nav_angga.dart';
-import 'login_screen.dart';
+import 'welcome_screen.dart';
 import 'admin_cs_chat_screen_angga.dart';
 import 'admin_orders_screen_angga.dart';
 
@@ -19,14 +19,6 @@ class AdminDashboardScreenAngga extends StatefulWidget {
 class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
   int _bottomNavIndex = 0;
   final BookingService _bookingService = BookingService();
-
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 11) return 'Selamat Pagi!';
-    if (hour < 15) return 'Selamat Siang!';
-    if (hour < 18) return 'Selamat Sore!';
-    return 'Selamat Malam!';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -100,90 +92,102 @@ class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(28, 20, 28, 24),
+      padding: const EdgeInsets.fromLTRB(28, 24, 28, 28),
       decoration: BoxDecoration(
-        color: Color(AppConstants.primaryColor),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
+        gradient: LinearGradient(
+          colors: [
+            Color(AppConstants.primaryColor),
+            Color(AppConstants.primaryDark),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Color(AppConstants.primaryColor).withValues(alpha: 0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: SafeArea(
         top: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.2),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.4),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.admin_panel_settings,
-                    color: Colors.white,
-                    size: 26,
-                  ),
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.18),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.35),
+                  width: 1.5,
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Admin Angga (${AuthService().currentUser?.email ?? "Unauthenticated"})',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${_getGreeting()} ☀️',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () {
-                    // Logout Admin
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const LoginScreen()),
-                      (route) => false,
-                    );
-                  },
-                  child: Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.15),
-                    ),
-                    child: const Icon(
-                      Icons.logout_outlined,
+              ),
+              child: const Icon(
+                Icons.admin_panel_settings_rounded,
+                color: Colors.white,
+                size: 26,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Selamat Datang, Admin!',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
                       color: Colors.white,
-                      size: 22,
+                      letterSpacing: 0.2,
                     ),
                   ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Admin Angga  •  ${AuthService().currentUser?.email ?? "asoy2023@gmail.com"}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.85),
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () {
+                // Logout Admin
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const WelcomeScreen()),
+                  (route) => false,
+                );
+              },
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.15),
                 ),
-              ],
+                child: const Icon(
+                  Icons.logout_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
             ),
           ],
         ),
@@ -249,17 +253,24 @@ class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
               ),
               child: Column(
                 children: [
-                  Icon(
-                    Icons.check_circle_outline_rounded,
-                    size: 44,
-                    color: Colors.green.withValues(alpha: 0.6),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.green.withValues(alpha: 0.08),
+                    ),
+                    child: const Icon(
+                      Icons.check_circle_outline_rounded,
+                      size: 32,
+                      color: Colors.green,
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   const Text(
-                    'Tidak ada pesanan aktif',
+                    'Tidak Ada Pesanan Aktif',
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
                       color: Color(AppConstants.textDark),
                     ),
                   ),
@@ -614,16 +625,16 @@ class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
                     width: double.infinity,
-                    height: 140,
-                    color: Color(AppConstants.accentColor),
+                    height: 110,
+                    color: Color(AppConstants.accentColor).withValues(alpha: 0.5),
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
                         Icon(
                           Icons.photo_camera_outlined,
-                          size: 40,
+                          size: 32,
                           color: Color(AppConstants.primaryColor)
-                              .withValues(alpha: 0.4),
+                              .withValues(alpha: 0.35),
                         ),
                         Positioned(
                           top: 10,
@@ -634,6 +645,13 @@ class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
@@ -651,19 +669,6 @@ class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
                                 ),
                               ],
                             ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 10,
-                          left: 10,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.favorite,
-                                color: Colors.red, size: 16),
                           ),
                         ),
                       ],
@@ -729,39 +734,39 @@ class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
                           hintStyle: const TextStyle(fontSize: 13),
                           isDense: true,
                           contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
+                              horizontal: 16, vertical: 12),
+                          filled: true,
+                          fillColor: Colors.grey.withValues(alpha: 0.05),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            borderSide: BorderSide(
-                                color: Colors.grey.withValues(alpha: 0.3)),
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            borderSide: BorderSide(
-                                color: Colors.grey.withValues(alpha: 0.3)),
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    TextButton(
+                    const SizedBox(width: 10),
+                    ElevatedButton(
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Balasan terkirim')),
                         );
                       },
-                      style: TextButton.styleFrom(
-                        foregroundColor: Color(AppConstants.primaryColor),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(AppConstants.primaryColor),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
+                            horizontal: 20, vertical: 12),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(24),
                         ),
-                        backgroundColor: Color(AppConstants.primaryColor)
-                            .withValues(alpha: 0.1),
                       ),
                       child: const Text('Kirim',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                     ),
                   ],
                 ),
@@ -777,14 +782,14 @@ class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 15, color: iconColor),
-        const SizedBox(width: 8),
+        Icon(icon, size: 16, color: iconColor),
+        const SizedBox(width: 10),
         Expanded(
           child: Text(
             text,
             style: const TextStyle(
               fontSize: 13,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               color: Color(AppConstants.textDark),
             ),
           ),
@@ -836,10 +841,10 @@ class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(30),
       ),
       child: Text(
         label,
@@ -859,9 +864,9 @@ class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
   ) {
     if (booking.status == 'Menunggu Verifikasi') {
       return Container(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         decoration: BoxDecoration(
-          color: Color(AppConstants.backgroundColor),
+          color: Color(AppConstants.backgroundColor).withValues(alpha: 0.4),
           borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
         child: Row(
@@ -870,22 +875,22 @@ class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
               child: OutlinedButton.icon(
                 onPressed: () => _handleReject(context, booking, bookingService),
                 icon: const Icon(Icons.close_rounded, size: 16),
-                label: const Text('Tolak', style: TextStyle(fontWeight: FontWeight.bold)),
+                label: const Text('Tolak', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.red,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  side: BorderSide(color: Colors.red.withValues(alpha: 0.6)),
+                  side: BorderSide(color: Colors.red.withValues(alpha: 0.4)),
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Expanded(
               flex: 2,
               child: ElevatedButton.icon(
                 onPressed: () => _handleVerify(context, booking, bookingService),
                 icon: const Icon(Icons.check_rounded, size: 16),
-                label: const Text('Verifikasi', style: TextStyle(fontWeight: FontWeight.bold)),
+                label: const Text('Verifikasi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
@@ -900,32 +905,40 @@ class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
       );
     } else if (booking.status == 'Menunggu Pembayaran') {
       return Container(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Color(AppConstants.backgroundColor),
+          color: Colors.white,
           borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.hourglass_empty, color: Colors.orange, size: 16),
-            const SizedBox(width: 6),
-            const Text(
-              'Menunggu Pembayaran Pelanggan',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: Colors.orange,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.orange.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.orange.withValues(alpha: 0.15)),
+          ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.hourglass_empty, color: Colors.orange, size: 16),
+              SizedBox(width: 8),
+              Text(
+                'Menunggu Pembayaran Pelanggan',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     } else if (booking.status == 'Diproses') {
       return Container(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         decoration: BoxDecoration(
-          color: Color(AppConstants.backgroundColor),
+          color: Color(AppConstants.backgroundColor).withValues(alpha: 0.4),
           borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
         child: SizedBox(
@@ -933,7 +946,7 @@ class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
           child: ElevatedButton.icon(
             onPressed: () => _showAssignPetugasDialog(context, booking, bookingService),
             icon: const Icon(Icons.person_add_rounded, size: 16),
-            label: const Text('Tugaskan Petugas', style: TextStyle(fontWeight: FontWeight.bold)),
+            label: const Text('Tugaskan Petugas', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
@@ -946,9 +959,9 @@ class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
       );
     } else if (booking.status == 'Petugas Ditugaskan') {
       return Container(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         decoration: BoxDecoration(
-          color: Color(AppConstants.backgroundColor),
+          color: Color(AppConstants.backgroundColor).withValues(alpha: 0.4),
           borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
         child: SizedBox(
@@ -956,7 +969,7 @@ class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
           child: ElevatedButton.icon(
             onPressed: () => _handleMarkDone(context, booking, bookingService),
             icon: const Icon(Icons.check_circle_rounded, size: 16),
-            label: const Text('Pesanan Selesai', style: TextStyle(fontWeight: FontWeight.bold)),
+            label: const Text('Pesanan Selesai', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
@@ -968,30 +981,39 @@ class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
         ),
       );
     } else {
+      final isSelesai = booking.status == 'Selesai';
       return Container(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Color(AppConstants.backgroundColor),
+          color: Colors.white,
           borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              booking.status == 'Selesai' ? Icons.check_circle : Icons.hourglass_empty,
-              color: booking.status == 'Selesai' ? Colors.green : Colors.orange,
-              size: 16,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              booking.status == 'Selesai' ? 'Pesanan Selesai & Dinilai' : 'Menunggu Ulasan Pelanggan',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: booking.status == 'Selesai' ? Colors.green : Colors.orange,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+          decoration: BoxDecoration(
+            color: (isSelesai ? Colors.green : Colors.orange).withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: (isSelesai ? Colors.green : Colors.orange).withValues(alpha: 0.15)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isSelesai ? Icons.check_circle : Icons.hourglass_empty,
+                color: isSelesai ? Colors.green : Colors.orange,
+                size: 16,
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Text(
+                isSelesai ? 'Pesanan Selesai & Dinilai' : 'Menunggu Ulasan Pelanggan',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: isSelesai ? Colors.green : Colors.orange,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }

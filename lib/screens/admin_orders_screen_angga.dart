@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/booking_model.dart';
 import '../services/booking_service.dart';
-import '../services/auth_service.dart';
 import '../utils/constants.dart';
 import 'admin_cs_chat_screen_angga.dart';
 
@@ -15,19 +14,9 @@ class AdminOrdersScreenAngga extends StatelessWidget {
     return Scaffold(
       backgroundColor: Color(AppConstants.backgroundColor),
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Pesanan Kebersihan',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
-            ),
-            Text(
-              'Auth: ${bookingService.orders.isNotEmpty ? "Has orders" : "No orders"} | User: ${AuthService().currentUser?.email ?? "NONE"} (${AuthService().currentUser?.uid ?? "NONE"})',
-              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w400, color: Colors.white70),
-            ),
-          ],
+        title: const Text(
+          'Pesanan Kebersihan',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
         backgroundColor: Color(AppConstants.primaryColor),
         foregroundColor: Colors.white,
@@ -558,10 +547,10 @@ class AdminOrdersScreenAngga extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(30),
       ),
       child: Text(
         label,
@@ -581,9 +570,9 @@ class AdminOrdersScreenAngga extends StatelessWidget {
   ) {
     if (booking.status == 'Menunggu Verifikasi') {
       return Container(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         decoration: BoxDecoration(
-          color: Color(AppConstants.backgroundColor),
+          color: Color(AppConstants.backgroundColor).withValues(alpha: 0.4),
           borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
         child: Row(
@@ -592,22 +581,22 @@ class AdminOrdersScreenAngga extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: () => _handleReject(context, booking, bookingService),
                 icon: const Icon(Icons.close_rounded, size: 16),
-                label: const Text('Tolak', style: TextStyle(fontWeight: FontWeight.bold)),
+                label: const Text('Tolak', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.red,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  side: BorderSide(color: Colors.red.withValues(alpha: 0.6)),
+                  side: BorderSide(color: Colors.red.withValues(alpha: 0.4)),
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Expanded(
               flex: 2,
               child: ElevatedButton.icon(
                 onPressed: () => _handleVerify(context, booking, bookingService),
                 icon: const Icon(Icons.check_rounded, size: 16),
-                label: const Text('Verifikasi', style: TextStyle(fontWeight: FontWeight.bold)),
+                label: const Text('Verifikasi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
@@ -622,32 +611,40 @@ class AdminOrdersScreenAngga extends StatelessWidget {
       );
     } else if (booking.status == 'Menunggu Pembayaran') {
       return Container(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Color(AppConstants.backgroundColor),
+          color: Colors.white,
           borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.hourglass_empty, color: Colors.orange, size: 16),
-            const SizedBox(width: 6),
-            const Text(
-              'Menunggu Pembayaran Pelanggan',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: Colors.orange,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.orange.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.orange.withValues(alpha: 0.15)),
+          ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.hourglass_empty, color: Colors.orange, size: 16),
+              SizedBox(width: 8),
+              Text(
+                'Menunggu Pembayaran Pelanggan',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     } else if (booking.status == 'Diproses') {
       return Container(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         decoration: BoxDecoration(
-          color: Color(AppConstants.backgroundColor),
+          color: Color(AppConstants.backgroundColor).withValues(alpha: 0.4),
           borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
         child: SizedBox(
@@ -655,7 +652,7 @@ class AdminOrdersScreenAngga extends StatelessWidget {
           child: ElevatedButton.icon(
             onPressed: () => _showAssignPetugasDialog(context, booking, bookingService),
             icon: const Icon(Icons.person_add_rounded, size: 16),
-            label: const Text('Tugaskan Petugas', style: TextStyle(fontWeight: FontWeight.bold)),
+            label: const Text('Tugaskan Petugas', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
@@ -668,9 +665,9 @@ class AdminOrdersScreenAngga extends StatelessWidget {
       );
     } else if (booking.status == 'Petugas Ditugaskan') {
       return Container(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         decoration: BoxDecoration(
-          color: Color(AppConstants.backgroundColor),
+          color: Color(AppConstants.backgroundColor).withValues(alpha: 0.4),
           borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
         child: SizedBox(
@@ -678,7 +675,7 @@ class AdminOrdersScreenAngga extends StatelessWidget {
           child: ElevatedButton.icon(
             onPressed: () => _handleMarkDone(context, booking, bookingService),
             icon: const Icon(Icons.check_circle_rounded, size: 16),
-            label: const Text('Pesanan Selesai', style: TextStyle(fontWeight: FontWeight.bold)),
+            label: const Text('Pesanan Selesai', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
@@ -690,30 +687,39 @@ class AdminOrdersScreenAngga extends StatelessWidget {
         ),
       );
     } else {
+      final isSelesai = booking.status == 'Selesai';
       return Container(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Color(AppConstants.backgroundColor),
+          color: Colors.white,
           borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              booking.status == 'Selesai' ? Icons.check_circle : Icons.hourglass_empty,
-              color: booking.status == 'Selesai' ? Colors.green : Colors.orange,
-              size: 16,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              booking.status == 'Selesai' ? 'Pesanan Selesai & Dinilai' : 'Menunggu Ulasan Pelanggan',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: booking.status == 'Selesai' ? Colors.green : Colors.orange,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+          decoration: BoxDecoration(
+            color: (isSelesai ? Colors.green : Colors.orange).withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: (isSelesai ? Colors.green : Colors.orange).withValues(alpha: 0.15)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isSelesai ? Icons.check_circle : Icons.hourglass_empty,
+                color: isSelesai ? Colors.green : Colors.orange,
+                size: 16,
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Text(
+                isSelesai ? 'Pesanan Selesai & Dinilai' : 'Menunggu Ulasan Pelanggan',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: isSelesai ? Colors.green : Colors.orange,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
