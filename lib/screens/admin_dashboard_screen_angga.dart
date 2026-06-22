@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/booking_model.dart';
 import '../services/booking_service.dart';
+import '../services/review_service.dart';
 import '../utils/constants.dart';
 import '../widgets/admin_bottom_nav_angga.dart';
+import '../widgets/admin_review_card.dart';
 import 'login_screen.dart';
 import 'admin_cs_chat_screen_angga.dart';
 import 'admin_orders_screen_angga.dart';
@@ -548,6 +550,10 @@ class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
 
   // Ulasan Pelanggan
   Widget _buildReviewSection() {
+    final reviewService = ReviewService();
+    reviewService.ensureListening();
+    final reviews = reviewService.reviews;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
@@ -564,194 +570,69 @@ class _AdminDashboardScreenAnggaState extends State<AdminDashboardScreenAngga> {
                   color: Color(AppConstants.textDark),
                 ),
               ),
-              GestureDetector(
-                onTap: () {},
-                child: Text(
-                  'Lihat Semua',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(AppConstants.primaryColor),
+              if (reviews.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${reviews.length} Ulasan',
+                    style: const TextStyle(
+                      color: Colors.amber,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Color(AppConstants.cardColor),
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 12,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    width: double.infinity,
-                    height: 140,
-                    color: Color(AppConstants.accentColor),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Icon(
-                          Icons.photo_camera_outlined,
-                          size: 40,
-                          color: Color(AppConstants.primaryColor)
-                              .withValues(alpha: 0.4),
-                        ),
-                        Positioned(
-                          top: 10,
-                          right: 10,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.star_rounded,
-                                    color: Color(0xFFFFD700), size: 16),
-                                SizedBox(width: 4),
-                                Text(
-                                  '4.9',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 10,
-                          left: 10,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.favorite,
-                                color: Colors.red, size: 16),
-                          ),
-                        ),
-                      ],
+          if (reviews.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 36),
+              decoration: BoxDecoration(
+                color: Color(AppConstants.cardColor),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 12,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.rate_review_outlined,
+                    size: 44,
+                    color: Color(AppConstants.textLight).withValues(alpha: 0.4),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Belum ada ulasan',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(AppConstants.textDark),
                     ),
                   ),
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Color(AppConstants.accentColor),
-                      ),
-                      child: Icon(Icons.person,
-                          size: 18, color: Color(AppConstants.primaryColor)),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Alfa Rajel',
-                              style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(AppConstants.textDark))),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: List.generate(
-                                5,
-                                (_) => const Icon(Icons.star_rounded,
-                                    size: 14, color: Color(0xFFFFD700))),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text('2 jam lalu',
-                        style: TextStyle(
-                            fontSize: 11,
-                            color: Color(AppConstants.textLight))),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Mantap sekali pelayanannya, petugas sangat ramah dan ruangan menjadi sangat bersih.',
-                  style: TextStyle(
-                      fontSize: 13,
+                  const SizedBox(height: 4),
+                  Text(
+                    'Ulasan pelanggan akan muncul di sini.',
+                    style: TextStyle(
+                      fontSize: 12,
                       color: Color(AppConstants.textLight),
-                      height: 1.5),
-                ),
-                const SizedBox(height: 16),
-                Divider(color: Colors.grey.withValues(alpha: 0.2)),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: 'Balas ulasan...',
-                          hintStyle: const TextStyle(fontSize: 13),
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            borderSide: BorderSide(
-                                color: Colors.grey.withValues(alpha: 0.3)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            borderSide: BorderSide(
-                                color: Colors.grey.withValues(alpha: 0.3)),
-                          ),
-                        ),
-                      ),
                     ),
-                    const SizedBox(width: 8),
-                    TextButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Balasan terkirim')),
-                        );
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: Color(AppConstants.primaryColor),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        backgroundColor: Color(AppConstants.primaryColor)
-                            .withValues(alpha: 0.1),
-                      ),
-                      child: const Text('Kirim',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+                  ),
+                ],
+              ),
+            )
+          else
+            ...reviews.map((review) => AdminReviewCard(review: review)),
         ],
       ),
     );

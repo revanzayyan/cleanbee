@@ -1152,7 +1152,6 @@ class _HomeContent extends StatelessWidget {
   }
 
   Widget _buildReviewCard(BuildContext context, {required ReviewModel review}) {
-    final TextEditingController replyCtrl = TextEditingController();
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -1166,6 +1165,7 @@ class _HomeContent extends StatelessWidget {
                 offset: const Offset(0, 2))
           ]),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Foto after (atau placeholder)
           ClipRRect(
@@ -1231,8 +1231,18 @@ class _HomeContent extends StatelessWidget {
                 decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Color(AppConstants.accentColor)),
-                child: Icon(Icons.person,
-                    size: 18, color: Color(AppConstants.primaryColor))),
+                child: Center(
+                  child: Text(
+                    review.customerName.isNotEmpty
+                        ? review.customerName[0].toUpperCase()
+                        : '?',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Color(AppConstants.primaryColor),
+                    ),
+                  ),
+                )),
             const SizedBox(width: 10),
             Expanded(
                 child: Column(
@@ -1271,50 +1281,55 @@ class _HomeContent extends StatelessWidget {
                       height: 1.5)),
             ),
           ],
-          const SizedBox(height: 16),
-          Divider(color: Colors.grey.withValues(alpha: 0.2)),
+          // Balasan admin (ditampilkan ke pengguna jika ada)
+          if (review.adminReply != null && review.adminReply!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(AppConstants.accentColor),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(AppConstants.primaryColor)
+                      .withValues(alpha: 0.2),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.admin_panel_settings_rounded,
+                      size: 16, color: Color(AppConstants.primaryColor)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Balasan CleanBee',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Color(AppConstants.primaryColor),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          review.adminReply!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color(AppConstants.textDark),
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
-          Row(children: [
-            Expanded(
-                child: TextField(
-                    controller: replyCtrl,
-                    decoration: InputDecoration(
-                        hintText: 'Balas ulasan...',
-                        hintStyle: const TextStyle(fontSize: 13),
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 10),
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            borderSide: BorderSide(
-                                color: Colors.grey.withValues(alpha: 0.3))),
-                        enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            borderSide: BorderSide(
-                                color:
-                                    Colors.grey.withValues(alpha: 0.3)))))),
-            const SizedBox(width: 8),
-            TextButton(
-                onPressed: () {
-                  if (replyCtrl.text.trim().isNotEmpty) {
-                    ReviewService()
-                        .replyToReview(review.id, replyCtrl.text.trim());
-                    replyCtrl.clear();
-                  }
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Balasan terkirim')));
-                },
-                style: TextButton.styleFrom(
-                    foregroundColor: Color(AppConstants.primaryColor),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 10),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
-                    backgroundColor: Color(AppConstants.primaryColor)
-                        .withValues(alpha: 0.1)),
-                child: const Text('Kirim',
-                    style: TextStyle(fontWeight: FontWeight.bold)))
-          ]),
         ],
       ),
     );
